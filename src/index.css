@@ -1,0 +1,286 @@
+@import "tailwindcss";
+
+/* Tell Tailwind v4 to use class-based dark mode (.dark selector) instead of prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --store-primary-color: #80b446;
+  --store-secondary-color: #6b9a37;
+
+  /* ── LOBBY CARE design tokens (from Figma variables + styles) ───────────── */
+  --lc-green: #80b446;        /* Green Primary */
+  --lc-green-deep: #6b9a37;   /* active nav / "عرض الكل" link */
+  --lc-green-light: #f1f7eb;  /* Light green — promo panel */
+  --lc-surface: #f7f9f4;      /* category tiles, trust strip, footer */
+  --lc-border: #e8e8e8;
+  --lc-ink: #1f1f1f;
+  --lc-ink-hero: #163820;
+  --lc-muted: #666666;
+  --lc-muted-soft: #8a8a8a;
+}
+
+@theme {
+  --color-primary: var(--store-primary-color);
+  --color-secondary: var(--store-secondary-color);
+
+  --color-lc-green: var(--lc-green);
+  --color-lc-green-deep: var(--lc-green-deep);
+  --color-lc-green-light: var(--lc-green-light);
+  --color-lc-surface: var(--lc-surface);
+  --color-lc-border: var(--lc-border);
+  --color-lc-ink: var(--lc-ink);
+  --color-lc-muted: var(--lc-muted);
+
+  --font-sans: var(--font-ibm-plex-arabic), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* Dynamic Color Overrides for Customer App */
+.bg-\[\#1a1a1a\],
+.bg-black {
+  background-color: var(--store-primary-color) !important;
+}
+
+.text-\[\#1a1a1a\],
+.text-black {
+  color: var(--store-primary-color) !important;
+}
+
+.border-\[\#1a1a1a\],
+.border-black {
+  border-color: var(--store-primary-color) !important;
+}
+
+.hover\:bg-black:hover {
+  background-color: var(--store-primary-color) !important;
+  opacity: 0.9 !important;
+}
+
+.hover\:text-black:hover {
+  color: var(--store-primary-color) !important;
+}
+
+.text-\[\#c5a059\] {
+  color: var(--store-secondary-color) !important;
+}
+
+.bg-\[\#c5a059\] {
+  background-color: var(--store-secondary-color) !important;
+}
+
+.border-\[\#c5a059\] {
+  border-color: var(--store-secondary-color) !important;
+}
+
+.group:hover .group-hover\:bg-\[\#1a1a1a\] {
+  background-color: var(--store-primary-color) !important;
+}
+
+/* Override admin-like colors inside Customer App to use Store Colors */
+.customer-app .text-indigo-600 {
+  color: var(--store-secondary-color) !important;
+}
+
+.customer-app .bg-indigo-50 {
+  background-color: color-mix(in srgb, var(--store-secondary-color) 10%, transparent) !important;
+}
+
+.customer-app .bg-indigo-600 {
+  background-color: var(--store-primary-color) !important;
+}
+
+.customer-app .bg-[#1a1a1a],
+.customer-app .bg-gray-900 {
+  background-color: var(--store-primary-color) !important;
+}
+
+.customer-app .text-gray-900:not(h1):not(h2):not(h3):not(p) {
+  /* Some important texts can default to primary color if needed, but safe to leave alone mostly */
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Premium Dark Mode overrides for the customer-facing mobile frame */
+.dark {
+  background-color: #121214 !important;
+  color: #fafafa !important;
+}
+
+/* Backgrounds */
+.dark .bg-white {
+  background-color: #1a1a1f !important;
+}
+.dark .bg-gray-50 {
+  background-color: #202026 !important;
+}
+.dark .bg-gray-100 {
+  background-color: #24242d !important;
+}
+.dark .bg-\[\#fafafa\] {
+  background-color: #121214 !important;
+}
+.dark .bg-white\/90 {
+  background-color: rgba(26, 26, 31, 0.9) !important;
+}
+.dark .bg-white\/80 {
+  background-color: rgba(18, 18, 20, 0.8) !important;
+}
+.dark .bg-gray-50\/50 {
+  background-color: rgba(32, 32, 38, 0.45) !important;
+}
+.dark .bg-gray-50\/90 {
+  background-color: rgba(32, 32, 38, 0.9) !important;
+}
+.dark .bg-red-50 {
+  background-color: #311c1c !important;
+}
+.dark .bg-amber-50 {
+  background-color: #31281c !important;
+}
+.dark .bg-blue-50 {
+  background-color: #1a2436 !important;
+}
+.dark .bg-indigo-50 {
+  background-color: #211c38 !important;
+}
+.dark .bg-emerald-50 {
+  background-color: #173322 !important;
+}
+
+/* Borders */
+.dark .border,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-gray-200\/60 {
+  border-color: #2c2c36 !important;
+}
+.dark .border-t {
+  border-top-color: #2c2c36 !important;
+}
+.dark .border-b {
+  border-bottom-color: #2c2c36 !important;
+}
+.dark .border-r {
+  border-right-color: #2c2c36 !important;
+}
+.dark .border-l {
+  border-left-color: #2c2c36 !important;
+}
+
+/* Text Colors */
+.dark .text-gray-900,
+.dark .text-gray-805,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-\[\#1a1a1a\],
+.dark .text-\[\#222222\] {
+  color: #ffffff !important;
+}
+.dark .text-gray-650,
+.dark .text-gray-600 {
+  color: #a6a6b8 !important;
+}
+.dark .text-gray-500 {
+  color: #9090a2 !important;
+}
+.dark .text-gray-400 {
+  color: #71717f !important;
+}
+
+/* Side Menu / Navigation Draw */
+.dark .bg-white.z-50 {
+  background-color: #121214 !important;
+}
+.dark .hover\:bg-gray-50:hover {
+  background-color: #202026 !important;
+}
+
+/* Form Settings */
+.dark input[type="text"],
+.dark input[type="tel"],
+.dark input[type="email"],
+.dark select,
+.dark textarea {
+  background-color: #1a1a22 !important;
+  color: #ffffff !important;
+  border-color: #2c2c36 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #525265 !important;
+}
+.dark .focus\:bg-white:focus {
+  background-color: #24242d !important;
+}
+
+/* Header & Bottom Sticky items bar */
+.dark header, 
+.dark footer, 
+.dark nav {
+  background-color: #121214 !important;
+  border-color: #2c2c36 !important;
+}
+
+/* Modal shadows, list items cards & images backgrounds */
+.dark .shadow-sm {
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.4) !important;
+}
+.dark .shadow-md {
+  box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.5) !important;
+}
+.dark .shadow-lg {
+  box-shadow: 0 10px 20px 0 rgba(0, 0, 0, 0.6) !important;
+}
+.dark .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Active buttons and links values */
+.dark .hover\:text-black:hover {
+  color: #ffffff !important;
+}
+.dark .hover\:bg-gray-100:hover {
+  background-color: #22222a !important;
+}
+.dark .text-red-500,
+.dark .text-red-600 {
+  color: #fca5a5 !important;
+}
+.dark .text-indigo-600 {
+  color: #818cf8 !important;
+}
+.dark .text-[#1a1a1a] {
+  color: #ffffff !important;
+}
+
+/* Checkout inputs and selectors */
+.dark .bg-gray-50\/40 {
+  background-color: rgba(32, 32, 38, 0.4) !important;
+}
+.dark .bg-emerald-50\/40 {
+  background-color: rgba(23, 51, 34, 0.4) !important;
+}
+.dark .bg-indigo-50\/40 {
+  background-color: rgba(33, 28, 56, 0.4) !important;
+}
+
+/* OrderSuccess animations details list overrides */
+.dark .divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2c2c36 !important;
+}
+
+/* Fixed bars layouts block */
+.dark .fixed.bottom-0 {
+  background-color: #121214 !important;
+  border-color: #2c2c36 !important;
+}

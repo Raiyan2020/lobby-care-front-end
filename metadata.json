@@ -1,0 +1,8 @@
+{
+  "name": "ez-shop-v4.1",
+  "description": "Specialized in original products",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
