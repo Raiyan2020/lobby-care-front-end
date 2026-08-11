@@ -13,6 +13,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useStore } from '../../contexts/StoreContext';
 import { useNavigate } from '../../lib/navigation';
 import { useAddToCart } from '../../hooks/useAddToCart';
+import { isOutOfStock, isLowStock } from '../../utils/stock';
 import { Price } from '../Price';
 
 interface LobbyProductCardProps {
@@ -32,6 +33,8 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
 
   const isFavorite = favorites.includes(String(product.id)) || product.is_favorite;
   const isAdding = loadingId === product.id;
+  const soldOut = isOutOfStock(product);
+  const lowStock = isLowStock(product);
 
   const hasOldPrice = product.old_price != null && product.old_price > product.price;
   const discount =
@@ -64,8 +67,21 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
           </div>
         )}
 
+        {/* Dim the artwork so a sold-out card reads as unavailable at a glance. */}
+        {soldOut && <div className="absolute inset-0 bg-white/60" aria-hidden />}
+
         {/* Badges — reading-start corner (top-right in Arabic), per node 14:1732 */}
         <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
+          {soldOut && (
+            <span className="rounded-full bg-[var(--lc-ink)] px-2.5 py-1 text-[12px] font-semibold leading-[20.4px] text-white">
+              {isArabic ? 'نفدت الكمية' : 'Out of stock'}
+            </span>
+          )}
+          {!soldOut && lowStock && (
+            <span className="rounded-full bg-[#d93a3a] px-2.5 py-1 text-[12px] font-semibold leading-[20.4px] text-white">
+              {isArabic ? 'كمية محدودة' : 'Low stock'}
+            </span>
+          )}
           {discount != null && discount > 0 && (
             <span className="rounded-full bg-[var(--lc-green)] px-2.5 py-1 text-[12px] font-semibold leading-[20.4px] text-white">
               {isArabic ? `خصم ${discount}%` : `-${discount}%`}
@@ -131,12 +147,19 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
         </div>
 
         <button
-          onClick={(e) => addToCart(e, product.id)}
-          disabled={isAdding}
-          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--lc-green)] text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 cursor-pointer"
+          onClick={(e) => addToCart(e, product.id, 1, undefined, product.stock)}
+          disabled={isAdding || soldOut}
+          aria-disabled={soldOut}
+          className={`mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] text-[15px] font-semibold transition-opacity ${
+            soldOut
+              ? 'cursor-not-allowed bg-[var(--lc-border)] text-[var(--lc-muted)]'
+              : 'cursor-pointer bg-[var(--lc-green)] text-white hover:opacity-90 disabled:opacity-60'
+          }`}
         >
           {isAdding ? (
             <Loader2 className="h-5 w-5 animate-spin" />
+          ) : soldOut ? (
+            <span>{isArabic ? 'نفدت الكمية' : 'Out of stock'}</span>
           ) : (
             <>
               <span>{isArabic ? 'أضف إلى السلة' : 'Add to cart'}</span>

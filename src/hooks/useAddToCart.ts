@@ -7,6 +7,7 @@ import { clearSession } from '../utils/auth';
 import { useNavigate } from '../lib/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
+import { isOutOfStock } from '../utils/stock';
 
 /**
  * useAddToCart
@@ -30,14 +31,26 @@ export function useAddToCart() {
     e: React.MouseEvent,
     productId: number,
     quantity = 1,
-    attributeValueIds?: number[]
+    attributeValueIds?: number[],
+    /**
+     * Units on hand, when the caller knows them. The backend does not enforce
+     * stock, so this is the single choke point that does — every layout that
+     * passes it gets the rule for free. Omitted means "unknown", which allows
+     * the add rather than blocking on missing data.
+     */
+    stock?: number | null
   ) => {
     e.stopPropagation();
+
+    if (isOutOfStock({ stock })) {
+      toast.error(t('outOfStockError'));
+      return;
+    }
 
     if (!isLoggedIn) {
       openAuthModal(() => {
         const dummyEvent = { stopPropagation: () => {} } as any;
-        addToCart(dummyEvent, productId, quantity, attributeValueIds);
+        addToCart(dummyEvent, productId, quantity, attributeValueIds, stock);
       });
       return;
     }
@@ -52,7 +65,7 @@ export function useAddToCart() {
         logoutUser();
         openAuthModal(() => {
           const dummyEvent = { stopPropagation: () => {} } as any;
-          addToCart(dummyEvent, productId, quantity, attributeValueIds);
+          addToCart(dummyEvent, productId, quantity, attributeValueIds, stock);
         });
         return;
       }

@@ -115,6 +115,9 @@ export const translations = {
     unauthorizedMsg: 'يرجى تسجيل الدخول أولاً',
     unauthorizedDesc: 'غير مصرح، سيتم توجيهك لصفحة الدخول.',
     addToCartError: 'حدث خطأ أثناء إضافة المنتج',
+    outOfStock: 'نفدت الكمية',
+    outOfStockError: 'هذا المنتج غير متوفر حالياً',
+    lowStock: 'كمية محدودة',
     addToCartSuccess: 'تمت الإضافة إلى السلة',
     connectionError: 'تعذّر الاتصال بالخادم. تحقق من الإنترنت وأعد المحاولة.',
 
@@ -319,6 +322,9 @@ export const translations = {
     unauthorizedMsg: 'Please sign in first',
     unauthorizedDesc: 'Unauthorized, redirecting to login.',
     addToCartError: 'An error occurred while adding the product',
+    outOfStock: 'Out of stock',
+    outOfStockError: 'This product is currently unavailable',
+    lowStock: 'Low stock',
     addToCartSuccess: 'Added to cart successfully',
     connectionError: 'Failed to connect to the server. Please check your internet connection.',
 

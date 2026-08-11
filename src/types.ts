@@ -65,6 +65,8 @@ export interface Product {
   
   optionType?: 'none' | 'size' | 'color';
   productOptions?: ProductOption[];
+  /** Units on hand, carried over from ApiProduct. Absent means "unknown, allow". */
+  stock?: number | null;
 }
 
 export interface AddressObject {

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Product } from '../types';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
+import { isOutOfStock } from '../utils/stock';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore, StoreProduct } from '../contexts/StoreContext';
 import { Price } from './Price';
@@ -31,8 +32,11 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
     setTimeout(() => setIsHeartAnimating(false), 300);
   };
 
+  const soldOut = isOutOfStock(translatedProduct);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (soldOut) return;
 
     // If it has options, open product details
     if (translatedProduct.optionType === 'size' || translatedProduct.optionType === 'color') {
@@ -72,10 +76,17 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           alt={translatedProduct.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        {computedBadge && (
-          <div className={`absolute top-2 ${dir === 'rtl' ? 'right-2' : 'left-2'} px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-md z-10 w-fit`}>
-            {computedBadge}
+        {soldOut && <div className="absolute inset-0 bg-white/60 z-10" aria-hidden />}
+        {soldOut ? (
+          <div className={`absolute top-2 ${dir === 'rtl' ? 'right-2' : 'left-2'} px-2 py-0.5 bg-[#1a1a1a] text-white text-[10px] font-bold rounded-md z-20 w-fit`}>
+            {t('outOfStock')}
           </div>
+        ) : (
+          computedBadge && (
+            <div className={`absolute top-2 ${dir === 'rtl' ? 'right-2' : 'left-2'} px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-md z-10 w-fit`}>
+              {computedBadge}
+            </div>
+          )
         )}
         <button
           onClick={handleFavoriteToggle}
@@ -113,10 +124,22 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
         <button
           onClick={handleAddToCart}
-          className="mt-2 w-full py-2 bg-gray-50 text-[#1a1a1a] active:scale-95 transition-all rounded-lg flex items-center justify-center gap-2 text-xs font-bold"
+          disabled={soldOut}
+          aria-disabled={soldOut}
+          className={`mt-2 w-full py-2 transition-all rounded-lg flex items-center justify-center gap-2 text-xs font-bold ${
+            soldOut
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-gray-50 text-[#1a1a1a] active:scale-95'
+          }`}
         >
-          <ShoppingCart className="w-3 h-3" />
-          <span>{t('addToCart')}</span>
+          {soldOut ? (
+            <span>{t('outOfStock')}</span>
+          ) : (
+            <>
+              <ShoppingCart className="w-3 h-3" />
+              <span>{t('addToCart')}</span>
+            </>
+          )}
         </button>
       </div>
     </div>

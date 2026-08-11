@@ -10,9 +10,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ProductCard } from '../components/ProductCard';
 import { useProductDetailsQuery } from '../hooks/useProductDetailsQuery';
 import { useAddToCart } from '../hooks/useAddToCart';
+import { isOutOfStock } from '../utils/stock';
 import { updateCartItemApi, removeCartItemApi } from '../api/cart';
 import { useInvalidateCart } from '../hooks/useCartQuery';
-import type { ProductAttributeValue } from '../api/types';
+import type { ApiProduct, ProductAttributeValue } from '../api/types';
 import type { ProductOption, Product } from '../types';
 
 export function ProductDetails() {
@@ -141,10 +142,15 @@ export function ProductDetails() {
   const currentOptionId = getSelectedOptionId();
   const cartItem = cart.find(item => item.product.id === String(productDetail.id) && item.variantId === currentOptionId);
   const cartQuantity = cartItem ? cartItem.quantity : 0;
-  const stock = 999; // Assume unlimited/safe stock delta unless API provides item-specific stocks
+  // Real stock when the API reports it; otherwise fall back to an effectively
+  // unlimited ceiling so an endpoint that omits the field cannot block a sale.
+  const stock = productDetail.stock ?? 999;
+  const soldOut = isOutOfStock(productDetail);
   const isAtMaxStock = cartQuantity >= stock;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
+    if (soldOut) return;
+
     if (needsSelection) {
       setValidationError(true);
       window.scrollTo({ top: 300, behavior: 'smooth' });
@@ -154,7 +160,7 @@ export function ProductDetails() {
     const valueIds = Object.values(selectedValues).map(v => v.id);
 
     // 1. Call server-side addToCart API
-    await addToServerCart(e, productDetail.id, 1, valueIds);
+    await addToServerCart(e, productDetail.id, 1, valueIds, productDetail.stock);
 
     // 2. Add to local store cart context to sync frontend views (Header/Cart/Checkout)
     const selectedOptionName = Object.values(selectedValues).map(v => v.name).join(' / ');
@@ -209,7 +215,7 @@ export function ProductDetails() {
   }
 
   // Map API products to local Product interface shape
-  const mapApiProductToProduct = (apiProd: any): Product => {
+  const mapApiProductToProduct = (apiProd: ApiProduct): Product => {
     return {
       id: String(apiProd.id),
       name: apiProd.name,
@@ -219,6 +225,7 @@ export function ProductDetails() {
       image: apiProd.image || '',
       optionType: 'none',
       productOptions: [],
+      stock: apiProd.stock,
     };
   };
 
@@ -414,16 +421,21 @@ export function ProductDetails() {
             >
               <button
                 type="button"
-                disabled={loadingId === productDetail.id}
+                disabled={loadingId === productDetail.id || soldOut}
+                aria-disabled={soldOut}
                 onClick={handleAddToCart}
-                className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all min-w-0 box-border select-none border ${needsSelection
-                  ? 'bg-gray-100/80 text-gray-700 border-gray-200 cursor-pointer shadow-sm hover:bg-gray-200'
-                  : 'bg-[#1a1a1a] border-transparent text-white shadow-lg shadow-black/10 cursor-pointer active:scale-[0.98]'
+                className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all min-w-0 box-border select-none border ${soldOut
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : needsSelection
+                    ? 'bg-gray-100/80 text-gray-700 border-gray-200 cursor-pointer shadow-sm hover:bg-gray-200'
+                    : 'bg-[#1a1a1a] border-transparent text-white shadow-lg shadow-black/10 cursor-pointer active:scale-[0.98]'
                   }`}
               >
-                <ShoppingCart className={`w-5 h-5 shrink-0 ${needsSelection ? 'text-gray-500' : ''}`} />
+                <ShoppingCart className={`w-5 h-5 shrink-0 ${needsSelection || soldOut ? 'text-gray-500' : ''}`} />
                 <span className="text-sm sm:text-base whitespace-nowrap shrink-0">
-                  {loadingId === productDetail.id
+                  {soldOut
+                    ? t('outOfStock')
+                    : loadingId === productDetail.id
                     ? (language === 'ar' ? 'جاري الإضافة...' : 'Adding...')
                     : needsSelection
                       ? (language === 'ar' ? 'اختر الخيارات أولاً' : 'Choose options first')

@@ -12,6 +12,7 @@
  *   App download       5:1070   (static copy — the newsletter half is omitted)
  *   Footer             5:1071
  */
+import { useEffect, useRef, type RefObject } from 'react';
 import { ArrowLeft, ShieldCheck, Truck, CreditCard, Headphones, Sparkles } from 'lucide-react';
 import type { ApiBanner, ApiCategory, ApiProduct } from '../api/types';
 import type { HomeLayoutProps } from './HomeLayoutProps';
@@ -51,6 +52,19 @@ const CATEGORY_SHORTCUTS = [
 
 // ── Small building blocks ──────────────────────────────────────────────────
 
+/** The "عرض الكل" affordance shared by every section header on this page. */
+function ViewAllButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-[var(--lc-green-deep)] transition-opacity hover:opacity-80 cursor-pointer"
+    >
+      <ArrowLeft className="h-[17px] w-[17px]" />
+      <span dir="auto">{label}</span>
+    </button>
+  );
+}
+
 function SectionHeading({
   title,
   subtitle,
@@ -72,17 +86,61 @@ function SectionHeading({
           {subtitle}
         </p>
       </div>
-      <button
-        onClick={onViewAll}
-        className="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-[var(--lc-green-deep)] transition-opacity hover:opacity-80 cursor-pointer"
-      >
-        <ArrowLeft className="h-[17px] w-[17px]" />
-        <span dir="auto">{viewAllLabel}</span>
-      </button>
-
-      
+      <ViewAllButton onClick={onViewAll} label={viewAllLabel} />
     </div>
   );
+}
+
+/**
+ * Auto-scrolls a horizontal strip one card at a time, wrapping back to the
+ * start. Intentionally inert when it would be unwelcome or pointless:
+ *   - the user prefers reduced motion
+ *   - the content already fits, so there is nothing to scroll
+ *   - the pointer is over the strip, or focus is inside it
+ *   - the tab is in the background
+ * RTL is handled by signing the step and comparing |scrollLeft|, since RTL
+ * scrollLeft runs 0 → -max in Chromium/Firefox.
+ */
+function useAutoScroll(
+  ref: RefObject<HTMLDivElement | null>,
+  { step, intervalMs, rtl }: { step: number; intervalMs: number; rtl: boolean }
+) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let paused = false;
+    const pause = () => { paused = true; };
+    const resume = () => { paused = false; };
+
+    el.addEventListener('pointerenter', pause);
+    el.addEventListener('pointerleave', resume);
+    el.addEventListener('focusin', pause);
+    el.addEventListener('focusout', resume);
+    el.addEventListener('touchstart', pause, { passive: true });
+
+    const id = setInterval(() => {
+      if (paused || document.hidden) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1) return; // nothing overflows — leave it alone
+      const atEnd = Math.abs(el.scrollLeft) >= max - 1;
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: rtl ? -step : step, behavior: 'smooth' });
+      }
+    }, intervalMs);
+
+    return () => {
+      clearInterval(id);
+      el.removeEventListener('pointerenter', pause);
+      el.removeEventListener('pointerleave', resume);
+      el.removeEventListener('focusin', pause);
+      el.removeEventListener('focusout', resume);
+      el.removeEventListener('touchstart', pause);
+    };
+  }, [ref, step, intervalMs, rtl]);
 }
 
 function ProductGrid({ products, bestSellerIds }: { products: ApiProduct[]; bestSellerIds: Set<number> }) {
@@ -125,6 +183,10 @@ export function LobbyCareHomeLayout({
   const { language } = useLanguage();
   const navigate = useNavigate();
   const isArabic = language === 'ar';
+
+  // Category strip auto-advances one card (168px card + 16px gap) every 3s.
+  const categoryStripRef = useRef<HTMLDivElement>(null);
+  useAutoScroll(categoryStripRef, { step: 184, intervalMs: 3000, rtl: isArabic });
 
   // The API splits its `banners` array across the two banner slots in the design.
   const heroBanner: ApiBanner | undefined = banners?.[0];
@@ -176,7 +238,16 @@ export function LobbyCareHomeLayout({
 
       {/* ── Category strip — node 7:7237 ───────────────────────────────── */}
       <section className="pt-16 lg:pt-20">
-        <div className="flex snap-x gap-4 overflow-x-auto px-5 pb-2 lg:justify-center lg:px-20 no-scrollbar">
+        <div className="flex justify-end px-5 pb-4 lg:px-20">
+          <ViewAllButton
+            onClick={() => navigate('/categories')}
+            label={isArabic ? 'عرض الكل' : 'View all'}
+          />
+        </div>
+        <div
+          ref={categoryStripRef}
+          className="flex snap-x gap-4 overflow-x-auto px-5 pb-2 lg:justify-center lg:px-20 no-scrollbar"
+        >
           {CATEGORY_SHORTCUTS.map((shortcut) => (
             <button
               key={shortcut.key}
