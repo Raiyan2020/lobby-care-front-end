@@ -5,7 +5,7 @@ import { Mail, ArrowLeft, AlertCircle, Loader2, User, Lock } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext';
 import { PhoneInput } from '../components/PhoneInput';
 import { Country, fetchCountries, loginApi, registerApi, checkPhoneExistsApi, CountriesResponse } from '../api/auth';
-import { startSession, getOrGenerateDeviceId } from '../utils/auth';
+import { startSession, getOrGenerateDeviceId, resolvePostAuthRedirect, persistPostAuthRedirect } from '../utils/auth';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -211,9 +211,7 @@ export function Login() {
           startSession(res.data as any);
 
           setTimeout(() => {
-            const redirectPath = localStorage.getItem('auth_redirect') || '/home';
-            localStorage.removeItem('auth_redirect');
-            window.location.href = redirectPath;
+            window.location.href = resolvePostAuthRedirect();
           }, 1000);
         } else if (res.key === 'needActive' && res.data && typeof res.data === 'object' && 'phone' in res.data) {
           const phone = res.data.phone;
@@ -224,6 +222,7 @@ export function Login() {
           sessionStorage.setItem('verify_type', 'register');
 
           toast.success(res.msg || t('verifyOtpDesc'));
+          persistPostAuthRedirect();
           navigate('/verify');
         } else {
           const errMsg = getMessageFromResponse(res);
@@ -262,6 +261,7 @@ export function Login() {
           sessionStorage.setItem('verify_country_code', selectedCountry?.code || '+965');
           sessionStorage.setItem('verify_type', 'register');
 
+          persistPostAuthRedirect();
           setTimeout(() => {
             navigate('/verify');
           }, 1000);

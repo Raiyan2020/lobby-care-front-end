@@ -1,4 +1,5 @@
 'use client';
+import { persistPostAuthRedirect } from '../utils/auth';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/navigation';
 import { ArrowLeft, User, Mail, Lock, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
@@ -150,6 +151,7 @@ export function Register() {
 
         // Redirect to /verify
         setTimeout(() => {
+          persistPostAuthRedirect();
           navigate('/verify');
         }, 1000);
       } else {

@@ -4,7 +4,7 @@ import { useNavigate } from '../lib/navigation';
 import { ShieldCheck, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { verifyCodeApi, resendCodeApi } from '../api/auth';
-import { startSession } from '../utils/auth';
+import { startSession, resolvePostAuthRedirect } from '../utils/auth';
 import { toast } from 'sonner';
 
 // Headless input-otp package
@@ -106,9 +106,7 @@ export function Verify() {
 
         // Redirect after delay
         setTimeout(() => {
-          const redirectPath = localStorage.getItem('auth_redirect') || '/home';
-          localStorage.removeItem('auth_redirect');
-          window.location.href = redirectPath;
+          window.location.href = resolvePostAuthRedirect();
         }, 1000);
       } else {
         const errMsg = res.msg || t('otpError');

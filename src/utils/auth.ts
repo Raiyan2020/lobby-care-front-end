@@ -107,6 +107,57 @@ export const startSession = (userData: Partial<UserSession> & { phone?: string; 
 };
 
 /**
+ * Resolves where to send the user after a successful sign-in / verification.
+ *
+ * Two mechanisms feed this and they previously did not talk to each other:
+ *  1. `?redirect=` — set by the auth middleware when it intercepts a protected
+ *     route, and forwarded through /welcome → /login | /register.
+ *  2. `auth_redirect` in localStorage — set by Cart and Checkout before they
+ *     send a guest off to authenticate.
+ *
+ * The query parameter wins because it reflects the destination the user asked
+ * for most recently. Consumed values are cleared so a stale localStorage entry
+ * cannot hijack a later sign-in.
+ *
+ * Only same-origin absolute paths are accepted; anything else (protocol-relative
+ * "//evil.com", absolute URLs, or a missing leading slash) falls back to "/" so
+ * a crafted link cannot turn sign-in into an open redirect.
+ */
+export const resolvePostAuthRedirect = (): string => {
+  const isSafeInternalPath = (value: string | null): value is string =>
+    !!value && value.startsWith('/') && !value.startsWith('//');
+
+  let fromQuery: string | null = null;
+  if (typeof window !== 'undefined') {
+    fromQuery = new URLSearchParams(window.location.search).get('redirect');
+  }
+
+  const fromStorage =
+    typeof localStorage !== 'undefined' ? localStorage.getItem('auth_redirect') : null;
+
+  // Always clear the stored value, whichever source ends up being used.
+  if (typeof localStorage !== 'undefined') localStorage.removeItem('auth_redirect');
+
+  if (isSafeInternalPath(fromQuery)) return fromQuery;
+  if (isSafeInternalPath(fromStorage)) return fromStorage;
+  return '/';
+};
+
+/**
+ * Carries the pending `?redirect=` across a navigation that drops the query
+ * string — notably login/register → /verify, where the OTP step is a fresh URL.
+ * Stores it under the same key Cart/Checkout use, so resolvePostAuthRedirect
+ * picks it up on the other side.
+ */
+export const persistPostAuthRedirect = (): void => {
+  if (typeof window === 'undefined') return;
+  const target = new URLSearchParams(window.location.search).get('redirect');
+  if (target && target.startsWith('/') && !target.startsWith('//')) {
+    localStorage.setItem('auth_redirect', target);
+  }
+};
+
+/**
  * Removes the session and token from localStorage (Logout).
  */
 export const clearSession = () => {
