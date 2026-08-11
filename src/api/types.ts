@@ -25,11 +25,7 @@ export interface ApiProduct {
   is_featured: boolean;
   is_favorite: boolean;
   is_in_cart: boolean;
-  /**
-   * Units on hand. Optional because the API does not expose it on every
-   * endpoint yet — see isOutOfStock() in src/utils/stock.ts, which treats an
-   * absent value as "unknown, allow" so nothing is blocked by missing data.
-   */
+  /** Units on hand from the product list resource. */
   stock?: number | null;
 }
 
@@ -246,7 +242,7 @@ export interface ProductDetail {
   is_in_cart: boolean;
   default_attributes: ProductDefaultAttribute[];
   attributes: ProductAttribute[];
-  /** See ApiProduct.stock — optional, absent means "unknown, allow". */
+  /** Units on hand from the product detail resource. */
   stock?: number | null;
 }
 
@@ -471,5 +467,4 @@ export interface NotificationToggleResponse {
     is_notify: boolean;
   };
 }
-
 

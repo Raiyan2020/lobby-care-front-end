@@ -310,6 +310,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             image: item.product.image,
             price: item.product.price,
             originalPrice: item.product.old_price ?? undefined,
+            stock: item.product.stock,
           } as any,
           quantity: item.quantity,
           selectedSize,
@@ -486,7 +487,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const variantId = matchedOption?.id || 'default';
-    const maxStock = matchedOption?.stock !== undefined ? matchedOption.stock : 999;
+    const productStock = product.stock ?? 999;
+    const maxStock = matchedOption?.stock !== undefined
+      ? Math.min(productStock, matchedOption.stock)
+      : productStock;
 
     let selectedOptionLabelAr = '';
     let selectedOptionLabelEn = '';
@@ -557,13 +561,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cart.map((item) => {
         const id = item.id || item.product.id;
         if (id === cartItemId) {
-          let maxStock = 999;
+          let maxStock = item.product.stock ?? 999;
           if (item.product.optionType === 'size' || item.product.optionType === 'color') {
             const matchedOption = item.product.productOptions?.find(
               (v) => v.id === item.variantId
             );
             if (matchedOption && matchedOption.stock !== undefined) {
-              maxStock = matchedOption.stock;
+              maxStock = Math.min(maxStock, matchedOption.stock);
             }
           }
           return { ...item, quantity: Math.min(quantity, maxStock) };

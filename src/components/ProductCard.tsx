@@ -4,11 +4,12 @@ import { Product } from '../types';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { isOutOfStock } from '../utils/stock';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useStore, StoreProduct } from '../contexts/StoreContext';
+import { useStore } from '../contexts/StoreContext';
 import { Price } from './Price';
 import { animateFlyToCart } from '../utils/cartAnimation';
 import { useNavigate } from '../lib/navigation';
 import { getTranslatedProduct } from '../utils/translationUtils';
+import { useAddToCart } from '../hooks/useAddToCart';
 
 interface ProductCardProps {
   product: Product;
@@ -17,7 +18,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, compact = false }: ProductCardProps) {
   const { dir, t, language } = useLanguage();
-  const { addToCart, favorites, toggleFavorite } = useStore();
+  const { favorites, toggleFavorite } = useStore();
+  const { addToCart, loadingId } = useAddToCart();
   const navigate = useNavigate();
 
   const translatedProduct = getTranslatedProduct(product, language);
@@ -34,7 +36,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
   const soldOut = isOutOfStock(translatedProduct);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (soldOut) return;
 
@@ -44,9 +46,18 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
       return;
     }
 
-    addToCart(translatedProduct as StoreProduct);
-    const img = document.getElementById(`product-image-${translatedProduct.id}`) as HTMLImageElement;
-    animateFlyToCart(img);
+    const added = await addToCart(
+      e,
+      Number(translatedProduct.id),
+      1,
+      undefined,
+      translatedProduct.stock,
+    );
+
+    if (added) {
+      const img = document.getElementById(`product-image-${translatedProduct.id}`) as HTMLImageElement;
+      animateFlyToCart(img);
+    }
   };
 
   const handleCardClick = () => {
@@ -124,7 +135,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
         <button
           onClick={handleAddToCart}
-          disabled={soldOut}
+          disabled={soldOut || loadingId === Number(translatedProduct.id)}
           aria-disabled={soldOut}
           className={`mt-2 w-full py-2 transition-all rounded-lg flex items-center justify-center gap-2 text-xs font-bold ${
             soldOut

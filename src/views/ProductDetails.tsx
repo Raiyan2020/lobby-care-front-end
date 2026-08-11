@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from '../lib/navigation';
-import { useStore, StoreProduct } from '../contexts/StoreContext';
+import { useStore } from '../contexts/StoreContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Price } from '../components/Price';
 import { animateFlyToCart } from '../utils/cartAnimation';
 import { Minus, Plus, ShoppingCart, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import { ProductCard } from '../components/ProductCard';
 import { useProductDetailsQuery } from '../hooks/useProductDetailsQuery';
 import { useAddToCart } from '../hooks/useAddToCart';
@@ -14,14 +15,14 @@ import { isOutOfStock } from '../utils/stock';
 import { updateCartItemApi, removeCartItemApi } from '../api/cart';
 import { useInvalidateCart } from '../hooks/useCartQuery';
 import type { ApiProduct, ProductAttributeValue } from '../api/types';
-import type { ProductOption, Product } from '../types';
+import type { Product } from '../types';
 
 export function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   // Retrieve global store context for local cart/favorites compatibility
-  const { cart, addToCart: addToStoreCart, updateCartQuantity, removeFromCart, favorites, toggleFavorite } = useStore();
+  const { cart, updateCartQuantity, removeFromCart, favorites, toggleFavorite } = useStore();
   const { dir, language, t } = useLanguage();
 
   // Load product details from server
@@ -53,6 +54,8 @@ export function ProductDetails() {
         await invalidateCart();
       } catch (err) {
         console.error('Failed to update cart quantity:', err);
+        toast.error(err instanceof Error ? err.message : t('addToCartError'));
+        await invalidateCart();
       }
     }, 500);
   };
@@ -160,36 +163,8 @@ export function ProductDetails() {
     const valueIds = Object.values(selectedValues).map(v => v.id);
 
     // 1. Call server-side addToCart API
-    await addToServerCart(e, productDetail.id, 1, valueIds, productDetail.stock);
-
-    // 2. Add to local store cart context to sync frontend views (Header/Cart/Checkout)
-    const selectedOptionName = Object.values(selectedValues).map(v => v.name).join(' / ');
-
-    const tempOption: ProductOption = {
-      id: currentOptionId,
-      nameAr: selectedOptionName,
-      nameEn: selectedOptionName,
-      extraPrice: extraPrice,
-      stock: 999,
-      isActive: true,
-    };
-
-    const storeProd: StoreProduct = {
-      id: String(productDetail.id),
-      name: productDetail.name,
-      image: productDetail.images.find(img => img.is_default)?.image || productDetail.images[0]?.image || '',
-      price: productDetail.price,
-      originalPrice: productDetail.old_price ?? undefined,
-      active: true,
-      isOffer: productDetail.old_price ? productDetail.old_price > productDetail.price : false,
-      isMostOrdered: false,
-      isTrending: false,
-      description: productDetail.description,
-      optionType: 'color', // Treat as standard option type
-      productOptions: [tempOption],
-    };
-
-    addToStoreCart(storeProd, currentOptionId, 1);
+    const added = await addToServerCart(e, productDetail.id, 1, valueIds, productDetail.stock);
+    if (!added) return;
 
     const img = document.getElementById('product-main-image') as HTMLImageElement;
     if (img) {

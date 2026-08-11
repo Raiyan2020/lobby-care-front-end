@@ -142,8 +142,8 @@ export function Home2Layout({ banners, categories, brands, featuredProducts, lat
                         )}
                       </div>
                       <button
-                        onClick={(e) => addToCart(e, product.id)}
-                        disabled={loadingId === product.id}
+                        onClick={(e) => addToCart(e, product.id, 1, undefined, product.stock)}
+                        disabled={loadingId === product.id || product.stock === 0}
                         className="mt-auto w-full py-2 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-70"
                         style={{ backgroundColor: 'var(--store-secondary-color)' }}
                       >

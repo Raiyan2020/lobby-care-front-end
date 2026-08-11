@@ -12,6 +12,7 @@ import { addAddressApi, updateAddressApi, deleteAddressApi } from '../api/addres
 import { useAddressesQuery, useInvalidateAddresses } from '../hooks/useAddressesQuery';
 import { AddressModal } from '../components/AddressModal';
 import { getSession } from '../utils/auth';
+import { toast } from 'sonner';
 
 interface CartProps {
   onNavigateHome: () => void;
@@ -118,6 +119,8 @@ export function Cart({ onNavigateHome }: CartProps) {
         await invalidateCart();
       } catch (err) {
         console.error('Failed to update cart item quantity:', err);
+        toast.error(err instanceof Error ? err.message : t('addToCartError'));
+        await invalidateCart();
       }
     }, 500);
   };
@@ -286,10 +289,10 @@ export function Cart({ onNavigateHome }: CartProps) {
                       </div>
 
                       {(() => {
-                        let stock = 999;
+                        let stock = item.product.stock ?? 999;
                         if (item.product.optionType === 'size' || item.product.optionType === 'color') {
                           const matchedOpt = item.product.productOptions?.find(opt => opt.id === item.variantId);
-                          if (matchedOpt && matchedOpt.stock !== undefined) stock = matchedOpt.stock;
+                          if (matchedOpt && matchedOpt.stock !== undefined) stock = Math.min(stock, matchedOpt.stock);
                         }
                         const isAtMaxStock = item.quantity >= stock;
                         return (

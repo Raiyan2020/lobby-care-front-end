@@ -1,10 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { addToCartApi } from '../api/cart';
+import { addToCartApi, getCartErrorMessage } from '../api/cart';
 import { useInvalidateCart } from './useCartQuery';
-import { clearSession } from '../utils/auth';
-import { useNavigate } from '../lib/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
 import { isOutOfStock } from '../utils/stock';
@@ -23,7 +21,6 @@ import { isOutOfStock } from '../utils/stock';
 export function useAddToCart() {
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const invalidateCart = useInvalidateCart();
-  const navigate = useNavigate();
   const { t } = useLanguage();
   const { isLoggedIn, openAuthModal, logoutUser } = useStore();
 
@@ -33,26 +30,24 @@ export function useAddToCart() {
     quantity = 1,
     attributeValueIds?: number[],
     /**
-     * Units on hand, when the caller knows them. The backend does not enforce
-     * stock, so this is the single choke point that does — every layout that
-     * passes it gets the rule for free. Omitted means "unknown", which allows
-     * the add rather than blocking on missing data.
+     * Units on hand, when the caller knows them. This gives immediate UI
+     * feedback; the backend independently enforces the authoritative limit.
      */
     stock?: number | null
-  ) => {
+  ): Promise<boolean> => {
     e.stopPropagation();
 
     if (isOutOfStock({ stock })) {
       toast.error(t('outOfStockError'));
-      return;
+      return false;
     }
 
     if (!isLoggedIn) {
       openAuthModal(() => {
-        const dummyEvent = { stopPropagation: () => {} } as any;
+        const dummyEvent = { stopPropagation: () => {} } as React.MouseEvent;
         addToCart(dummyEvent, productId, quantity, attributeValueIds, stock);
       });
-      return;
+      return false;
     }
 
     // Optimistically block the button while in-flight
@@ -64,15 +59,15 @@ export function useAddToCart() {
       if (res.code === 401 || res.key === 'unauthenticated') {
         logoutUser();
         openAuthModal(() => {
-          const dummyEvent = { stopPropagation: () => {} } as any;
+          const dummyEvent = { stopPropagation: () => {} } as React.MouseEvent;
           addToCart(dummyEvent, productId, quantity, attributeValueIds, stock);
         });
-        return;
+        return false;
       }
 
       if (res.response_status?.error) {
-        toast.error(res.msg || t('addToCartError'));
-        return;
+        toast.error(getCartErrorMessage(res, t('addToCartError')));
+        return false;
       }
 
       // Success
@@ -82,8 +77,10 @@ export function useAddToCart() {
 
       // Refresh cart count + data in Header and CartPage
       await invalidateCart();
-    } catch (err) {
+      return true;
+    } catch {
       toast.error(t('connectionError'));
+      return false;
     } finally {
       setLoadingId(null);
     }

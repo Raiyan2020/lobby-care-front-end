@@ -128,8 +128,8 @@ export function Home3Layout({ banners, categories, brands, featuredProducts, lat
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={(e) => addToCart(e, product.id)}
-                        disabled={loadingId === product.id}
+                        onClick={(e) => addToCart(e, product.id, 1, undefined, product.stock)}
+                        disabled={loadingId === product.id || product.stock === 0}
                         className="px-4 py-1.5 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all disabled:opacity-70"
                         style={{ backgroundColor: 'var(--store-secondary-color)' }}
                       >

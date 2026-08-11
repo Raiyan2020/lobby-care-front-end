@@ -29,11 +29,27 @@ export interface CartItem {
     price: number;
     old_price: number | null;
     discount_percentage: number | null;
+    stock: number | null;
   };
   quantity: number;
   selected_attributes: CartAttribute[];
   unit_price: number;
   line_total: number;
+}
+
+export function getCartErrorMessage(response: CartApiResponse, fallback: string): string {
+  const validationErrors = response.response_status?.validation_errors;
+
+  if (Array.isArray(validationErrors) && validationErrors.length > 0) {
+    return validationErrors[0];
+  }
+
+  if (validationErrors && !Array.isArray(validationErrors)) {
+    const firstFieldErrors = Object.values(validationErrors).find((messages) => messages.length > 0);
+    if (firstFieldErrors?.[0]) return firstFieldErrors[0];
+  }
+
+  return response.msg || fallback;
 }
 
 export interface CartAttribute {
@@ -126,7 +142,7 @@ export async function fetchCart(): Promise<CartApiResponse> {
 export async function updateCartItemApi(
   cartItemId: string | number,
   quantity: number
-): Promise<any> {
+): Promise<CartApiResponse> {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('api_token') : null;
   const formData = new FormData();
   formData.append('quantity', String(quantity));
@@ -140,11 +156,13 @@ export async function updateCartItemApi(
     body: formData,
   });
 
-  if (!res.ok) {
-    throw new Error(`Failed to update cart item quantity: ${res.status}`);
+  const json: CartApiResponse = await res.json();
+
+  if (!res.ok || json.response_status?.error) {
+    throw new Error(getCartErrorMessage(json, `Failed to update cart item quantity: ${res.status}`));
   }
 
-  return res.json();
+  return json;
 }
 
 /**
