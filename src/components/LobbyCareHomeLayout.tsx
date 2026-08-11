@@ -12,8 +12,7 @@
  *   App download       5:1070   (static copy — the newsletter half is omitted)
  *   Footer             5:1071
  */
-import { useEffect, useRef, type RefObject } from 'react';
-import { ArrowLeft, ShieldCheck, Truck, CreditCard, Headphones, Sparkles } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Truck, CreditCard, Headphones, Sparkles, LayoutGrid, Tags } from 'lucide-react';
 import type { ApiBanner, ApiCategory, ApiProduct } from '../api/types';
 import type { HomeLayoutProps } from './HomeLayoutProps';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -85,58 +84,6 @@ function SectionHeading({
   );
 }
 
-/**
- * Auto-scrolls a horizontal strip one card at a time, wrapping back to the
- * start. Intentionally inert when it would be unwelcome or pointless:
- *   - the user prefers reduced motion
- *   - the content already fits, so there is nothing to scroll
- *   - the pointer is over the strip, or focus is inside it
- *   - the tab is in the background
- * RTL is handled by signing the step and comparing |scrollLeft|, since RTL
- * scrollLeft runs 0 → -max in Chromium/Firefox.
- */
-function useAutoScroll(
-  ref: RefObject<HTMLDivElement | null>,
-  { step, intervalMs, rtl }: { step: number; intervalMs: number; rtl: boolean }
-) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    let paused = false;
-    const pause = () => { paused = true; };
-    const resume = () => { paused = false; };
-
-    el.addEventListener('pointerenter', pause);
-    el.addEventListener('pointerleave', resume);
-    el.addEventListener('focusin', pause);
-    el.addEventListener('focusout', resume);
-    el.addEventListener('touchstart', pause, { passive: true });
-
-    const id = setInterval(() => {
-      if (paused || document.hidden) return;
-      const max = el.scrollWidth - el.clientWidth;
-      if (max <= 1) return; // nothing overflows — leave it alone
-      const atEnd = Math.abs(el.scrollLeft) >= max - 1;
-      if (atEnd) {
-        el.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        el.scrollBy({ left: rtl ? -step : step, behavior: 'smooth' });
-      }
-    }, intervalMs);
-
-    return () => {
-      clearInterval(id);
-      el.removeEventListener('pointerenter', pause);
-      el.removeEventListener('pointerleave', resume);
-      el.removeEventListener('focusin', pause);
-      el.removeEventListener('focusout', resume);
-      el.removeEventListener('touchstart', pause);
-    };
-  }, [ref, step, intervalMs, rtl]);
-}
-
 function ProductGrid({ products, bestSellerIds }: { products: ApiProduct[]; bestSellerIds: Set<number> }) {
   return (
     <div className="grid grid-cols-1 gap-6 px-5 pt-9 sm:grid-cols-2 lg:grid-cols-3 lg:px-20 xl:grid-cols-4">
@@ -177,10 +124,6 @@ export function LobbyCareHomeLayout({
   const { language } = useLanguage();
   const navigate = useNavigate();
   const isArabic = language === 'ar';
-
-  // Category strip auto-advances one card (168px card + 16px gap) every 3s.
-  const categoryStripRef = useRef<HTMLDivElement>(null);
-  useAutoScroll(categoryStripRef, { step: 184, intervalMs: 3000, rtl: isArabic });
 
   // The API splits its `banners` array across the two banner slots in the design.
   const heroBanner: ApiBanner | undefined = banners?.[0];
@@ -232,19 +175,31 @@ export function LobbyCareHomeLayout({
 
       {/* ── Category strip — node 7:7237 ───────────────────────────────── */}
       <section className="pt-16 lg:pt-20">
-        <div className="flex justify-end px-5 pb-4 lg:px-20">
-          <ViewAllButton
+        <div className="flex gap-3 px-5 pb-4 lg:px-20">
+          <button
             onClick={() => navigate('/categories')}
-            label={isArabic ? 'عرض الكل' : 'View all'}
-          />
+            className="flex min-h-12 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[var(--lc-surface)] px-4 py-3 text-[15px] font-semibold text-[var(--lc-ink)] transition-shadow hover:shadow-[0_6px_18px_rgba(31,31,31,0.08)] sm:flex-none sm:min-w-40"
+          >
+            <LayoutGrid className="h-5 w-5 text-[var(--lc-green-deep)]" strokeWidth={1.7} />
+            <span>{isArabic ? 'الأقسام' : 'Categories'}</span>
+          </button>
+          <button
+            onClick={() => navigate('/brands')}
+            className="flex min-h-12 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[var(--lc-surface)] px-4 py-3 text-[15px] font-semibold text-[var(--lc-ink)] transition-shadow hover:shadow-[0_6px_18px_rgba(31,31,31,0.08)] sm:flex-none sm:min-w-40"
+          >
+            <Tags className="h-5 w-5 text-[var(--lc-green-deep)]" strokeWidth={1.7} />
+            <span>{isArabic ? 'الماركات' : 'Brands'}</span>
+          </button>
         </div>
         <div
-          ref={categoryStripRef}
-          className="flex snap-x gap-4 overflow-x-auto px-5 pb-2 lg:justify-center lg:px-20 no-scrollbar"
+          data-testid="home-category-strip"
+          dir={isArabic ? 'rtl' : 'ltr'}
+          className="flex snap-x justify-start gap-4 overflow-x-auto px-5 pb-2 lg:px-20 no-scrollbar"
         >
           {categories.map((category: ApiCategory) => (
             <button
               key={category.id}
+              data-category-id={category.id}
               onClick={() => navigate(`/categories?id=${category.id}`)}
               className="flex h-[185px] w-[168px] shrink-0 snap-start cursor-pointer flex-col items-center justify-between rounded-[16px] bg-[var(--lc-surface)] px-6 py-4 transition-shadow hover:shadow-[0_6px_18px_rgba(31,31,31,0.08)]"
             >
