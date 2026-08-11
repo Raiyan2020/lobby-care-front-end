@@ -1,3 +1,5 @@
+import { isSafeInternalPath } from './internalPath';
+
 // ─── Cookie helpers ──────────────────────────────────────────────────────────
 // The Edge middleware reads `auth_token` cookie to decide auth state.
 // These helpers keep the cookie in sync with localStorage.
@@ -124,9 +126,6 @@ export const startSession = (userData: Partial<UserSession> & { phone?: string; 
  * a crafted link cannot turn sign-in into an open redirect.
  */
 export const resolvePostAuthRedirect = (): string => {
-  const isSafeInternalPath = (value: string | null): value is string =>
-    !!value && value.startsWith('/') && !value.startsWith('//');
-
   let fromQuery: string | null = null;
   if (typeof window !== 'undefined') {
     fromQuery = new URLSearchParams(window.location.search).get('redirect');
@@ -152,7 +151,7 @@ export const resolvePostAuthRedirect = (): string => {
 export const persistPostAuthRedirect = (): void => {
   if (typeof window === 'undefined') return;
   const target = new URLSearchParams(window.location.search).get('redirect');
-  if (target && target.startsWith('/') && !target.startsWith('//')) {
+  if (isSafeInternalPath(target)) {
     localStorage.setItem('auth_redirect', target);
   }
 };

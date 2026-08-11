@@ -26,6 +26,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
 import { useNavigate } from '../lib/navigation';
+import { isSafeInternalPath } from '../utils/internalPath';
 
 export function Welcome() {
   const { dir, language } = useLanguage();
@@ -37,7 +38,10 @@ export function Welcome() {
 
   // The middleware forwards the originally requested page; carry it through so
   // the user lands where they intended once authenticated.
-  const redirect = searchParams.get('redirect');
+  const requestedRedirect = searchParams.get('redirect');
+  const redirect = isSafeInternalPath(requestedRedirect)
+    ? requestedRedirect
+    : null;
   const withRedirect = (path: string) =>
     redirect ? `${path}?redirect=${encodeURIComponent(redirect)}` : path;
 
