@@ -6,6 +6,30 @@
 :root {
   --store-primary-color: #80b446;
   --store-secondary-color: #6b9a37;
+
+  /* ── LOBBY CARE raw custom properties ───────────────────────────────────────
+     The @theme block below is what generates the `bg-lc-green` style utilities,
+     and Tailwind exposes those as `--color-lc-*`. LobbyCareHomeLayout and
+     LobbyProductCard predate that layer and style themselves with `var(--lc-*)`
+     directly, so these aliases keep both spellings resolving to one value.
+     Without them every `var(--lc-*)` reference collapses to an invalid value —
+     the add-to-cart button renders transparent and the card loses its borders.
+     ──────────────────────────────────────────────────────────────────────── */
+  --lc-green: #80b446;
+  --lc-green-deep: #6b9a37;
+  --lc-green-dark: #4a7a35;
+  --lc-green-light: #f1f7eb;
+  --lc-surface: #f7f9f4;
+  --lc-border: #e8e8e8;
+  --lc-ink: #1f1f1f;
+  --lc-ink-soft: #424842;
+  --lc-muted: #666666;
+  --lc-muted-soft: #8a8a8a;
+  --lc-faint: #bbbbbb;
+  --lc-danger: #d93a3a;
+  --lc-danger-bg: #fdecec;
+  --lc-canvas: #f9f7f3;
+  --lc-border-warm: #d8d0c4;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

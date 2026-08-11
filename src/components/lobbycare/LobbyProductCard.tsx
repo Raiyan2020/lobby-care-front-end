@@ -2,12 +2,21 @@
 /**
  * LOBBY CARE product card — Figma nodes 14:1715 / 20:3408.
  *
- * 302px card: square image well on `--lc-surface` with a favourite button
- * (top-start), a discount / best-seller badge stack (top-end) and a "quick
- * view" button that fades in on hover, then name · price · add-to-cart.
+ * Measured from the node tree — the whole card is 302×457:
+ *   frame   302×457, radius 16, 1.2px #e8e8e8 border, white
+ *   image   301×293 well on #f7f9f4 (very slightly wider than tall)
+ *   badges  top-start, 8px apart — discount pill #80b446, best-seller white
+ *   heart   36×36 white circle, 1.2px #e8e8e8, top-end
+ *   body    162 tall, 16px padding
+ *   title   16/22 @500, end-aligned, single line
+ *   price   44px row — current 19/32 @700 at the reading edge, struck-through
+ *           original 14/24 #8a8a8a about 15px to its left
+ *   button  268×44, #80b446, radius 10, 1.2px white border, 15/26 @600
+ *
+ * Figma has no hover state on this card, so there is no quick-view overlay.
  */
 import { useState } from 'react';
-import { Heart, ShoppingCart, Eye, Loader2 } from 'lucide-react';
+import { Heart, ShoppingBag, Loader2 } from 'lucide-react';
 import type { ApiProduct } from '../../api/types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useStore } from '../../contexts/StoreContext';
@@ -48,8 +57,8 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
       onClick={openDetails}
       className="group flex w-full cursor-pointer flex-col overflow-hidden rounded-[16px] border border-[var(--lc-border)] bg-white transition-shadow hover:shadow-[0_8px_24px_rgba(31,31,31,0.08)]"
     >
-      {/* Image well */}
-      <div className="relative aspect-square w-full overflow-hidden bg-[var(--lc-surface)]">
+      {/* Image well — 301×293 on a 302 card, so very slightly wider than tall */}
+      <div className="relative aspect-[301/293] w-full overflow-hidden bg-[var(--lc-surface)]">
         {product.image && !imageFailed ? (
           <img
             id={`product-image-${product.id}`}
@@ -73,22 +82,22 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
         {/* Badges — reading-start corner (top-right in Arabic), per node 14:1732 */}
         <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
           {soldOut && (
-            <span className="rounded-full bg-[var(--lc-ink)] px-2.5 py-1 text-[12px] font-semibold leading-[20.4px] text-white">
+            <span className="rounded-full bg-[var(--lc-ink)] px-2.5 py-1 text-[12px] font-semibold leading-[20px] text-white">
               {isArabic ? 'نفدت الكمية' : 'Out of stock'}
             </span>
           )}
           {!soldOut && lowStock && (
-            <span className="rounded-full bg-[#d93a3a] px-2.5 py-1 text-[12px] font-semibold leading-[20.4px] text-white">
+            <span className="rounded-full bg-[#d93a3a] px-2.5 py-1 text-[12px] font-semibold leading-[20px] text-white">
               {isArabic ? 'كمية محدودة' : 'Low stock'}
             </span>
           )}
           {discount != null && discount > 0 && (
-            <span className="rounded-full bg-[var(--lc-green)] px-2.5 py-1 text-[12px] font-semibold leading-[20.4px] text-white">
+            <span className="rounded-full bg-[var(--lc-green)] px-2.5 py-1 text-[12px] font-semibold leading-[20px] text-white">
               {isArabic ? `خصم ${discount}%` : `-${discount}%`}
             </span>
           )}
           {bestSeller && (
-            <span className="rounded-full bg-white/95 px-2.5 py-1 text-[12px] font-medium leading-[20.4px] text-[var(--lc-ink)]">
+            <span className="rounded-full bg-white px-2.5 py-1 text-[12px] font-medium leading-[20px] text-[var(--lc-ink)]">
               {isArabic ? 'الأكثر مبيعًا' : 'Best seller'}
             </span>
           )}
@@ -101,56 +110,49 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
             toggleFavorite(String(product.id));
           }}
           aria-label={isArabic ? 'أضيفي إلى المفضلة' : 'Add to favourites'}
-          className="absolute top-3 end-3 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--lc-border)] bg-white/95 transition-transform active:scale-90 cursor-pointer"
+          className="absolute top-3 end-3 flex h-9 w-9 items-center justify-center rounded-full border-[1.2px] border-[var(--lc-border)] bg-white transition-transform active:scale-90 cursor-pointer"
         >
           <Heart
             className={`h-4 w-4 transition-colors ${
-              isFavorite ? 'fill-[var(--lc-green)] text-[var(--lc-green)]' : 'text-[var(--lc-ink)]'
+              isFavorite ? 'fill-[var(--lc-green)] text-[var(--lc-green)]' : 'text-[var(--lc-muted)]'
             }`}
           />
         </button>
 
-        {/* Quick view — reveals on hover */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            openDetails();
-          }}
-          className="absolute bottom-4 left-1/2 flex h-11 w-[184px] -translate-x-1/2 translate-y-2 items-center justify-center gap-2 rounded-[10px] border border-[var(--lc-border)] bg-white opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 cursor-pointer"
-        >
-          <span className="text-[15px] font-semibold text-[var(--lc-ink)]">
-            {isArabic ? 'عرض سريع' : 'Quick view'}
-          </span>
-          <Eye className="h-5 w-5 text-[var(--lc-ink)]" />
-        </button>
       </div>
 
-      {/* Body */}
+      {/* Body — 162px tall on a 302 card: 16px padding, a 26px title block,
+          a 44px price row and the 44px button sitting 16px below it. */}
       <div className="flex flex-1 flex-col p-4">
         <h3
           dir="auto"
           title={product.name}
-          className="line-clamp-2 min-h-[44px] text-[16px] font-medium leading-[22px] text-[var(--lc-ink)] text-end"
+          className="truncate pt-1 text-end text-[16px] font-medium leading-[22px] text-[var(--lc-ink)]"
         >
           {product.name}
         </h3>
 
-        <div className="mt-2 flex flex-row-reverse items-baseline justify-start gap-3">
-          <Price amount={product.price} className="text-[19px] font-bold text-[var(--lc-ink)]" />
+        {/* Current price sits at the reading-start edge with the struck-through
+            original to its left, bottom-aligned, ~15px apart. */}
+        <div className="flex h-11 flex-row items-end justify-end gap-[15px]">
           {hasOldPrice && (
             <Price
               amount={product.old_price!}
               isOldPrice
-              className="text-[14px] text-[var(--lc-muted-soft)]"
+              className="text-[14px] leading-[24px] text-[var(--lc-muted-soft)] line-through"
             />
           )}
+          <Price
+            amount={product.price}
+            className="text-[19px] font-bold leading-[32px] text-[var(--lc-ink)]"
+          />
         </div>
 
         <button
           onClick={(e) => addToCart(e, product.id, 1, undefined, product.stock)}
           disabled={isAdding || soldOut}
           aria-disabled={soldOut}
-          className={`mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] text-[15px] font-semibold transition-opacity ${
+          className={`mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border-[1.2px] border-white text-[15px] font-semibold leading-[26px] transition-opacity ${
             soldOut
               ? 'cursor-not-allowed bg-[var(--lc-border)] text-[var(--lc-muted)]'
               : 'cursor-pointer bg-[var(--lc-green)] text-white hover:opacity-90 disabled:opacity-60'
@@ -163,7 +165,7 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
           ) : (
             <>
               <span>{isArabic ? 'أضف إلى السلة' : 'Add to cart'}</span>
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingBag className="h-5 w-5" strokeWidth={1.2} />
             </>
           )}
         </button>
