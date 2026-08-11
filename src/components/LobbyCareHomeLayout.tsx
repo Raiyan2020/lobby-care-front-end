@@ -4,7 +4,7 @@
  *
  * Section order (top → bottom):
  *   Hero banner        8:7503   ← home.banners[0]
- *   Category strip     7:7237   ← home.categories (+ two fixed shortcuts)
+ *   Category strip     7:7237   ← home.categories
  *   منتجات مميزة        5:378    ← home.featured_products (falls back to most_ordered)
  *   Promo banner       5:1067   ← home.banners[1]
  *   أحدث العروض         5:1068   ← home.latest_offers
@@ -42,12 +42,6 @@ const TRUST = [
   { Icon: Truck, titleAr: 'توصيل سريع داخل الكويت', titleEn: 'Fast delivery in Kuwait', bodyAr: 'خلال 24–48 ساعة لجميع المحافظات.', bodyEn: 'Within 24–48 hours to all governorates.' },
   { Icon: CreditCard, titleAr: 'دفع آمن', titleEn: 'Secure payment', bodyAr: 'كي نت، فيزا، ماستركارد وآبل باي.', bodyEn: 'KNET, Visa, Mastercard and Apple Pay.' },
   { Icon: Headphones, titleAr: 'دعم عملاء متواصل', titleEn: 'Always-on support', bodyAr: 'من 9 ص حتى 9 م.', bodyEn: 'From 9am to 9pm.' },
-];
-
-/** Two shortcuts that lead the category strip in the design. */
-const CATEGORY_SHORTCUTS = [
-  { key: 'brands', ar: 'الماركات', en: 'Brands', path: '/brands' },
-  { key: 'offers', ar: 'العروض', en: 'Offers', path: '/offers' },
 ];
 
 // ── Small building blocks ──────────────────────────────────────────────────
@@ -248,21 +242,6 @@ export function LobbyCareHomeLayout({
           ref={categoryStripRef}
           className="flex snap-x gap-4 overflow-x-auto px-5 pb-2 lg:justify-center lg:px-20 no-scrollbar"
         >
-          {CATEGORY_SHORTCUTS.map((shortcut) => (
-            <button
-              key={shortcut.key}
-              onClick={() => navigate(shortcut.path)}
-              className="flex h-[185px] w-[168px] shrink-0 snap-start cursor-pointer flex-col items-center justify-between rounded-[16px] bg-[var(--lc-surface)] px-6 py-4 transition-shadow hover:shadow-[0_6px_18px_rgba(31,31,31,0.08)]"
-            >
-              <span className="flex flex-1 items-center justify-center">
-                <Sparkles className="h-12 w-12 text-[var(--lc-green)]" strokeWidth={1.3} />
-              </span>
-              <span dir="auto" className="text-[20px] leading-[27.2px] text-[var(--lc-ink)]">
-                {isArabic ? shortcut.ar : shortcut.en}
-              </span>
-            </button>
-          ))}
-
           {categories.map((category: ApiCategory) => (
             <button
               key={category.id}
