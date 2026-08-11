@@ -132,9 +132,16 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
           {product.name}
         </h3>
 
-        {/* Current price sits at the reading-start edge with the struck-through
-            original to its left, bottom-aligned, ~15px apart. */}
-        <div className="flex h-11 flex-row items-end justify-end gap-[15px]">
+        {/* Figma puts the current price at the reading-start edge (x185 of 302,
+            i.e. right under RTL) with the struck-through original ~15px to its
+            left. Under dir="rtl" the first flex child renders rightmost and
+            `justify-start` anchors the pair to that edge — `justify-end` would
+            mirror the row to the left. */}
+        <div className="flex h-11 flex-row items-end justify-start gap-[15px]">
+          <Price
+            amount={product.price}
+            className="text-[19px] font-bold leading-[32px] text-[var(--lc-ink)]"
+          />
           {hasOldPrice && (
             <Price
               amount={product.old_price!}
@@ -142,10 +149,6 @@ export function LobbyProductCard({ product, bestSeller = false }: LobbyProductCa
               className="text-[14px] leading-[24px] text-[var(--lc-muted-soft)] line-through"
             />
           )}
-          <Price
-            amount={product.price}
-            className="text-[19px] font-bold leading-[32px] text-[var(--lc-ink)]"
-          />
         </div>
 
         <button
