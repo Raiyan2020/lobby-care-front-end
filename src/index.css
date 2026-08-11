@@ -6,37 +6,127 @@
 :root {
   --store-primary-color: #80b446;
   --store-secondary-color: #6b9a37;
-
-  /* ── LOBBY CARE design tokens (from Figma variables + styles) ───────────── */
-  --lc-green: #80b446;        /* Green Primary */
-  --lc-green-deep: #6b9a37;   /* active nav / "عرض الكل" link */
-  --lc-green-light: #f1f7eb;  /* Light green — promo panel */
-  --lc-surface: #f7f9f4;      /* category tiles, trust strip, footer */
-  --lc-border: #e8e8e8;
-  --lc-ink: #1f1f1f;
-  --lc-ink-hero: #163820;
-  --lc-muted: #666666;
-  --lc-muted-soft: #8a8a8a;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOBBY CARE design tokens
+
+   Derived from the Figma file KO9ZyAbg9LUGEGJ3HDs1PM by frequency-analysing
+   9,634 real node values across the 26 desktop frames on the "Website" page.
+   The file publishes no library styles and exposes no variables API, so these
+   are measured from the nodes themselves. Usage counts are noted so the
+   hierarchy stays legible: the most-used value is the default.
+   ────────────────────────────────────────────────────────────────────────── */
 @theme {
+  /* ── Colour ─────────────────────────────────────────────────────────────── */
+  --color-lc-green: #80b446;        /* 246x — brand primary */
+  --color-lc-green-deep: #6b9a37;   /*  73x — hover / active */
+  --color-lc-green-dark: #4a7a35;   /*   6x — pressed */
+  --color-lc-green-light: #f1f7eb;  /*  69x — soft fill, promo panel */
+  --color-lc-surface: #f7f9f4;      /* 106x — tiles, trust strip, footer */
+  --color-lc-border: #e8e8e8;       /*  66x — hairlines */
+  --color-lc-ink: #1f1f1f;          /* 543x — primary text */
+  --color-lc-ink-soft: #424842;     /*  22x */
+  --color-lc-muted: #666666;        /* 1135x — body / secondary text */
+  --color-lc-muted-soft: #8a8a8a;   /* 211x — tertiary text */
+  --color-lc-faint: #bbbbbb;        /*   9x — disabled */
+  --color-lc-danger: #d93a3a;       /*  13x — error text */
+  --color-lc-danger-bg: #fdecec;    /*   6x — error surface */
+  --color-lc-canvas: #f9f7f3;       /*   5x — warm canvas behind the auth screens */
+  --color-lc-border-warm: #d8d0c4;  /* secondary-button border on the auth cards */
+
   --color-primary: var(--store-primary-color);
   --color-secondary: var(--store-secondary-color);
 
-  --color-lc-green: var(--lc-green);
-  --color-lc-green-deep: var(--lc-green-deep);
-  --color-lc-green-light: var(--lc-green-light);
-  --color-lc-surface: var(--lc-surface);
-  --color-lc-border: var(--lc-border);
-  --color-lc-ink: var(--lc-ink);
-  --color-lc-muted: var(--lc-muted);
-
+  /* ── Typography ─────────────────────────────────────────────────────────── */
   --font-sans: var(--font-ibm-plex-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-alexandria), var(--font-ibm-plex-arabic), ui-sans-serif, sans-serif;
+
+  /* Line-heights hold a consistent ~1.72 ratio throughout the design. */
+  --text-lc-overline: 0.6875rem;    /* 11px */
+  --text-lc-overline--line-height: 1.1875rem;    /* 19px */
+  --text-lc-overline--letter-spacing: 0.28px;
+  --text-lc-caption: 0.75rem;       /* 12px */
+  --text-lc-caption--line-height: 1.25rem;       /* 20px */
+  --text-lc-sm: 0.8125rem;          /* 13px */
+  --text-lc-sm--line-height: 1.375rem;           /* 22px */
+  --text-lc-base: 0.875rem;         /* 14px */
+  --text-lc-base--line-height: 1.5rem;           /* 24px */
+  --text-lc-body: 0.9375rem;        /* 15px — the design's default, 490 uses */
+  --text-lc-body--line-height: 1.625rem;         /* 26px */
+  --text-lc-md: 1rem;               /* 16px */
+  --text-lc-md--line-height: 1.6875rem;          /* 27px */
+  --text-lc-lg: 1.0625rem;          /* 17px */
+  --text-lc-lg--line-height: 1.8125rem;          /* 29px */
+  --text-lc-xl: 1.1875rem;          /* 19px */
+  --text-lc-xl--line-height: 2rem;               /* 32px */
+  --text-lc-2xl: 1.25rem;           /* 20px — section headings */
+  --text-lc-2xl--line-height: 2.125rem;          /* 34px */
+  --text-lc-hero: 2.75rem;          /* 44px — hero display */
+  --text-lc-hero--line-height: 3.4375rem;        /* 55px */
+
+  /* ── Radii ──────────────────────────────────────────────────────────────── */
+  --radius-lc-xs: 5px;
+  --radius-lc-sm: 8px;
+  --radius-lc: 10px;                /* 202x — most common */
+  --radius-lc-md: 12px;             /* 141x */
+  --radius-lc-lg: 14px;
+  --radius-lc-xl: 16px;
+  --radius-lc-2xl: 18px;
+  --radius-lc-3xl: 20px;
+
+  /* ── Elevation ──────────────────────────────────────────────────────────── */
+  --shadow-lc-card: 0 4px 40px rgba(0, 0, 0, 0.08);
+  --shadow-lc-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lc-md: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  /* ── Layout ─────────────────────────────────────────────────────────────── */
+  /* 1440px frame with 80px gutters → 1280px of content. */
+  --spacing-lc-container: 80rem;    /* 1280px */
+  --spacing-lc-gutter: 5rem;        /* 80px */
 }
 
 body {
   font-family: var(--font-sans);
 }
+
+/* The design's page gutter: 80px at 1440, tightening on smaller viewports.
+   Figma has no mobile frames, so the sub-1280 steps follow the design system
+   rather than a drawn layout — see FIGMA_FRONTEND_IMPLEMENTATION_PLAN.md §0. */
+@utility lc-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: calc(var(--spacing-lc-container) + 2 * var(--spacing-lc-gutter));
+  padding-inline: 1.25rem;          /* 20px — mobile */
+  @media (width >= 48rem) {
+    padding-inline: 2.5rem;         /* 40px — tablet */
+  }
+  @media (width >= 80rem) {
+    padding-inline: var(--spacing-lc-gutter); /* 80px — desktop, per Figma */
+  }
+}
+
+/* Honour the OS reduced-motion preference across every animated surface. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LEGACY tenant overrides (Home1–Home7).
+
+   Load-bearing: 20+ shared components and views still style themselves with
+   `bg-black` / `#1a1a1a` / `#c5a059` and rely on these rules to pick up the
+   per-store colour. LobbyCare components use the tokens above instead, so this
+   block is left intact rather than removed — deleting it would restyle every
+   other tenant's storefront.
+   ────────────────────────────────────────────────────────────────────────── */
 
 /* Dynamic Color Overrides for Customer App */
 .bg-\[\#1a1a1a\],

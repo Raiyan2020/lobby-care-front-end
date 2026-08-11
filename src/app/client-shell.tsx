@@ -8,6 +8,8 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { Header } from '../components/Header';
+import { LobbyHeader } from '../components/lobbycare/LobbyHeader';
+import { IS_LOBBY_CARE } from '../api/config';
 import { SideMenu } from '../components/SideMenu';
 import { AppContainer } from '../components/AppContainer';
 import { useStore } from '../contexts/StoreContext';
@@ -130,11 +132,20 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
     <div style={themeStyle} className="w-full h-full customer-app">
       <AppContainer>
         <div className="flex flex-col flex-1 h-full relative">
-          <Header
-            onMenuClick={() => setIsMenuOpen(true)}
-            onCartClick={() => handleNavigate('CART')}
-            onFavoritesClick={() => handleNavigate('FAVORITES')}
-          />
+          {/* LobbyCare gets the Figma header; other tenants keep the shared one. */}
+          {IS_LOBBY_CARE ? (
+            <LobbyHeader
+              onMenuClick={() => setIsMenuOpen(true)}
+              onCartClick={() => handleNavigate('CART')}
+              onFavoritesClick={() => handleNavigate('FAVORITES')}
+            />
+          ) : (
+            <Header
+              onMenuClick={() => setIsMenuOpen(true)}
+              onCartClick={() => handleNavigate('CART')}
+              onFavoritesClick={() => handleNavigate('FAVORITES')}
+            />
+          )}
           <main
             className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col ${isHomePath ? 'pb-0' : 'pb-10'}`}
           >

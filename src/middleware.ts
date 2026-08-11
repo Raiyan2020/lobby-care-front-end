@@ -25,6 +25,7 @@ const PROTECTED_PREFIXES = [
 
 // Routes that logged-in users should not access
 const AUTH_ONLY_PREFIXES = [
+  '/welcome',
   '/login',
   '/register',
   '/verify',
@@ -43,7 +44,10 @@ export function middleware(request: NextRequest) {
 
   if (isProtected && !isAuthenticated) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/login';
+    // The Figma flow ("مرحبا" → "تسجيل دخول") makes /welcome the auth gateway:
+    // it offers sign in, register, or continue-as-guest. /login stays directly
+    // reachable. Revert this to '/login' to restore the previous behaviour.
+    loginUrl.pathname = '/welcome';
     // Persist the intended destination so the login page can redirect back
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
