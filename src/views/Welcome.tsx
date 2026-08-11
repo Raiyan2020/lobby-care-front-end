@@ -19,122 +19,65 @@
  * The fractional Figma type sizes (25.6/14.72/15.2/14.4) come from a scaled
  * instance and are rounded to whole pixels.
  */
-import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { motion, useReducedMotion } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useStore } from '../contexts/StoreContext';
 import { useNavigate } from '../lib/navigation';
+import { AuthShell, AuthHeading, AuthSubmit, AUTH_ARTWORK } from '../components/lobbycare/AuthShell';
 import { isSafeInternalPath } from '../utils/internalPath';
 
 export function Welcome() {
   const { dir, language } = useLanguage();
-  const { settings } = useStore();
   const navigate = useNavigate();
   const searchParams = useSearchParams();
   const isArabic = language === 'ar';
-  const reduceMotion = useReducedMotion();
 
   // The middleware forwards the originally requested page; carry it through so
   // the user lands where they intended once authenticated.
   const requestedRedirect = searchParams.get('redirect');
-  const redirect = isSafeInternalPath(requestedRedirect)
-    ? requestedRedirect
-    : null;
+  const redirect = isSafeInternalPath(requestedRedirect) ? requestedRedirect : null;
   const withRedirect = (path: string) =>
     redirect ? `${path}?redirect=${encodeURIComponent(redirect)}` : path;
 
-  const rise = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 16 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
-      };
-
   return (
-    <div dir={dir} className="flex flex-1 flex-col bg-lc-canvas">
-      <section className="lc-container flex flex-1 flex-col-reverse items-center justify-between gap-10 py-10 lg:flex-row lg:items-center lg:py-16">
-        {/* Artwork — authored first so RTL renders it on the right, per Figma */}
-        <motion.div
-          {...(reduceMotion
-            ? {}
-            : {
-                initial: { opacity: 0, scale: 0.98 },
-                animate: { opacity: 1, scale: 1 },
-                transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
-              })}
-          className="relative aspect-[601/557] w-full max-w-[601px] shrink-0 overflow-hidden rounded-lc-3xl lg:w-[601px]"
+    <AuthShell artwork={AUTH_ARTWORK.welcome} artworkSide="right" artworkRatio="601/557">
+      <AuthHeading size={26}>{isArabic ? 'مرحباً بك في لوبي كير' : 'Welcome to Lobby Care'}</AuthHeading>
+
+      <p dir="auto" className="pt-3 text-[15px] leading-[25px] text-lc-muted">
+        {isArabic
+          ? 'نمنحك منتجات العناية الطبيعية بأجود المكونات النقية.'
+          : 'Natural care products made with the purest ingredients.'}
+      </p>
+
+      <div className="flex flex-col gap-3 pt-7">
+        <AuthSubmit onClick={() => navigate(withRedirect('/login'))}>
+          {isArabic ? 'تسجيل الدخول' : 'Sign in'}
+        </AuthSubmit>
+
+        <button
+          type="button"
+          onClick={() => navigate(withRedirect('/register'))}
+          className="flex h-[52px] w-full cursor-pointer items-center justify-center rounded-lc border-[1.3px] border-lc-border-warm text-[15px] font-medium leading-[23px] text-lc-ink transition-colors hover:bg-lc-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green"
         >
-          <Image
-            src="/lobbycare/welcome-hero.jpg"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 601px"
-            className="object-cover"
+          {isArabic ? 'إنشاء حساب جديد' : 'Create a new account'}
+        </button>
+      </div>
+
+      <div className="flex justify-center pt-5">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="group flex cursor-pointer items-center gap-1.5 text-[14px] leading-[22px] text-[#888888] transition-colors hover:text-lc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green"
+        >
+          {isArabic ? 'متابعة كزائر' : 'Continue as a guest'}
+          <ChevronLeft
+            className={`size-4 transition-transform group-hover:-translate-x-0.5 ${
+              dir === 'ltr' ? 'rotate-180 group-hover:translate-x-0.5' : ''
+            }`}
+            aria-hidden
           />
-        </motion.div>
-
-        {/* Card column — 420 wide, logo above the card */}
-        <motion.div {...rise} className="flex w-full max-w-[420px] flex-col items-center gap-6">
-          {settings.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={settings.logoUrl}
-              alt={isArabic ? settings.storeName : settings.storeNameEn}
-              className="h-40 w-auto object-contain"
-            />
-          ) : null}
-
-          <div className="w-full rounded-lc-3xl bg-white px-11 py-10 shadow-lc-card">
-            <h1 className="font-sans text-[26px] leading-[38px] font-bold text-lc-ink">
-              {isArabic ? 'مرحباً بك في لوبي كير' : 'Welcome to Lobby Care'}
-            </h1>
-
-            <p className="mt-3 text-[15px] leading-[25px] text-lc-muted">
-              {isArabic
-                ? 'نمنحك منتجات العناية الطبيعية بأجود المكونات النقية.'
-                : 'Natural care products made with the purest ingredients.'}
-            </p>
-
-            <div className="mt-7 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => navigate(withRedirect('/login'))}
-                className="flex h-13 w-full cursor-pointer items-center justify-center rounded-lc bg-lc-green-dark text-lc-md font-bold text-white transition-colors hover:bg-lc-green-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green"
-              >
-                {isArabic ? 'تسجيل الدخول' : 'Sign in'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate(withRedirect('/register'))}
-                className="flex h-13 w-full cursor-pointer items-center justify-center rounded-lc border-[1.3px] border-lc-border-warm text-lc-body font-medium text-lc-ink transition-colors hover:bg-lc-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green"
-              >
-                {isArabic ? 'إنشاء حساب جديد' : 'Create a new account'}
-              </button>
-            </div>
-
-            <div className="mt-5 flex justify-center">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="group flex cursor-pointer items-center gap-1.5 text-lc-base text-lc-muted-soft transition-colors hover:text-lc-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green"
-              >
-                {isArabic ? 'متابعة كزائر' : 'Continue as a guest'}
-                <ChevronLeft
-                  className={`size-4 transition-transform group-hover:-translate-x-0.5 ${
-                    dir === 'ltr' ? 'rotate-180 group-hover:translate-x-0.5' : ''
-                  }`}
-                  aria-hidden
-                />
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-    </div>
+        </button>
+      </div>
+    </AuthShell>
   );
 }

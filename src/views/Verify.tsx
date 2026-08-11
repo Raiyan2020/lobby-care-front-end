@@ -1,32 +1,54 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * OTP verification — Figma "تاكيد ع رقم الجوال" (node 80:18449) and its
+ * success state "تم التحقق بنجاح" (node 80:18757).
+ *
+ *   card      420 wide, radius 20, pad 40/44, flat (no shadow in Figma)
+ *   heading   IBM Plex Sans Arabic 700 · 24/36
+ *   sub       400 · 14/24 · #888888, 10px below the heading
+ *   phone     700 · 16/24 · #1a1a1a, 6px below the sub
+ *   slots     six 52×56 boxes, 10px apart, radius 10, 1.3px #d8d0c4
+ *   resend    14/21 · #888888, 20px above and below
+ *   button    332×52, bg #4a7a35, radius 10, 700 · 16/24
+ *   success   80×80 #4a7a35 circle with a white check, then heading + copy
+ *
+ * All verification behaviour is unchanged: session-storage handoff, auto-submit
+ * at six digits, 40s resend countdown, and the post-auth redirect.
+ */
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/navigation';
-import { ShieldCheck, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { verifyCodeApi, resendCodeApi } from '../api/auth';
 import { startSession, resolvePostAuthRedirect } from '../utils/auth';
 import { toast } from 'sonner';
+import {
+  AuthShell,
+  AuthHeading,
+  AuthSubmit,
+  AuthError,
+  AUTH_ARTWORK,
+} from '../components/lobbycare/AuthShell';
 
-// Headless input-otp package
-// @ts-ignore
-import { OTPInput, SlotProps } from 'input-otp';
+import { OTPInput, type SlotProps } from 'input-otp';
 
-// Individual OTP slot component styled in shadcn / premium style
+/**
+ * A single code box — 52×56 at desktop, per Figma. Six boxes plus five 10px
+ * gaps measure 362px against a 332px card interior, so Figma lets the row
+ * bleed past the card padding; `-mx-[15px]` on the row reproduces that rather
+ * than letting the sixth box wrap. Below `sm` the boxes step down so the row
+ * still fits a 360px viewport on one line.
+ */
 function OtpSlot(props: SlotProps) {
   return (
     <div
-      className={`w-12 h-12 bg-gray-55 dark:bg-neutral-800 border rounded-2xl flex items-center justify-center font-black text-xl text-[#1a1a1a] dark:text-white transition-all shadow-sm relative ${props.isActive
-        ? 'ring-2 ring-[var(--store-secondary-color)] border-transparent bg-white dark:bg-neutral-900'
-        : 'border-gray-200 dark:border-neutral-700'
-        }`}
+      className={`relative flex h-12 w-10 shrink-0 items-center justify-center rounded-lc border-[1.3px] bg-white text-[20px] font-bold text-lc-ink transition-colors sm:h-[56px] sm:w-[52px] ${
+        props.isActive ? 'border-lc-green' : 'border-lc-border-warm'
+      }`}
     >
-      {props.char !== null ? (
-        <span className="font-sans leading-none">{props.char}</span>
-      ) : null}
-
+      {props.char !== null ? <span className="leading-none">{props.char}</span> : null}
       {props.hasFakeCaret && (
-        <div className="absolute pointer-events-none inset-0 flex items-center justify-center animate-caret-blink">
-          <div className="w-px h-6 bg-[#1a1a1a] dark:bg-white" />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="h-6 w-px animate-pulse bg-lc-ink" />
         </div>
       )}
     </div>
@@ -34,20 +56,19 @@ function OtpSlot(props: SlotProps) {
 }
 
 export function Verify() {
-  const { dir, language, t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const isArabic = language === 'ar';
 
-  // Verification states
   const [phoneNumber, setPhoneNumber] = useState('');
   const [countryCode, setCountryCode] = useState('');
-  const [verifyType, setVerifyType] = useState('register');
+  const [, setVerifyType] = useState('register');
 
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Countdown timer state
   const [countdown, setCountdown] = useState(40);
   const [resending, setResending] = useState(false);
 
@@ -58,7 +79,11 @@ export function Verify() {
     const storedType = sessionStorage.getItem('verify_type') || 'register';
 
     if (!storedPhone) {
-      toast.error(language === 'ar' ? 'بيانات التفعيل غير موجودة. يرجى تسجيل الدخول أو التسجيل.' : 'Verification session expired.');
+      toast.error(
+        isArabic
+          ? 'بيانات التفعيل غير موجودة. يرجى تسجيل الدخول أو التسجيل.'
+          : 'Verification session expired.'
+      );
       navigate('/login', { replace: true });
       return;
     }
@@ -66,55 +91,45 @@ export function Verify() {
     setPhoneNumber(storedPhone);
     setCountryCode(storedCode);
     setVerifyType(storedType);
-  }, [navigate, language]);
+  }, [navigate, isArabic]);
 
-  // Countdown timer effect
+  // Countdown timer
   useEffect(() => {
     if (countdown <= 0) return;
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => prev - 1);
-    }, 1000);
-
+    const timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Trigger verify code API call when OTP code reaches length 4
   const handleComplete = async (code: string) => {
     setError(null);
     setVerifying(true);
 
     try {
-      const res = await verifyCodeApi({
-        country_code: countryCode,
-        phone: phoneNumber,
-        code,
-        type: 'register',
-      }, language);
+      const res = await verifyCodeApi(
+        { country_code: countryCode, phone: phoneNumber, code, type: 'register' },
+        language
+      );
 
       if (res.code === 200 && res.data) {
         setSuccess(true);
         toast.success(res.msg || t('otpSuccess'));
 
-        // Start login session with details + token
         startSession(res.data);
 
-        // Clear verification session storage
         sessionStorage.removeItem('verify_phone');
         sessionStorage.removeItem('verify_country_code');
         sessionStorage.removeItem('verify_type');
 
-        // Redirect after delay
         setTimeout(() => {
           window.location.href = resolvePostAuthRedirect();
-        }, 1000);
+        }, 1500);
       } else {
         const errMsg = res.msg || t('otpError');
         setError(errMsg);
         toast.error(errMsg);
-        setOtpCode(''); // Clear on error to re-enter
+        setOtpCode('');
       }
-    } catch (err) {
+    } catch {
       setError(t('connectionError'));
       toast.error(t('connectionError'));
     } finally {
@@ -124,148 +139,133 @@ export function Verify() {
 
   const handleOTPChange = (val: string) => {
     setOtpCode(val);
-    if (val.length === 6) {
-      handleComplete(val);
-    }
+    if (val.length === 6) handleComplete(val);
   };
 
-  // Handle Resend Verification Code
   const handleResend = async () => {
     if (countdown > 0 || resending) return;
     setResending(true);
     setError(null);
 
     try {
-      const res = await resendCodeApi({
-        country_code: countryCode,
-        phone: phoneNumber,
-        type: 'register',
-      }, language);
+      const res = await resendCodeApi(
+        { country_code: countryCode, phone: phoneNumber, type: 'register' },
+        language
+      );
 
       if (res.code === 200) {
         toast.success(res.msg || t('otpResent'));
-        setCountdown(40); // Reset timer to 40 seconds
+        setCountdown(40);
       } else {
-        toast.error(res.msg || (language === 'ar' ? 'فشل إعادة إرسال الرمز.' : 'Failed to resend code.'));
+        toast.error(res.msg || (isArabic ? 'فشل إعادة إرسال الرمز.' : 'Failed to resend code.'));
       }
-    } catch (err) {
+    } catch {
       toast.error(t('connectionError'));
     } finally {
       setResending(false);
     }
   };
 
-  return (
-    <div className="flex flex-col pb-24 pt-4 min-h-[80vh] bg-[#fafafa] dark:bg-neutral-900/10 justify-center px-6">
-      <div className="w-full max-w-md mx-auto space-y-8">
+  const mmss = `${String(Math.floor(countdown / 60)).padStart(2, '0')}:${String(countdown % 60).padStart(2, '0')}`;
 
-        {/* Back button */}
-        <div className={`flex ${dir === 'rtl' ? 'justify-end' : 'justify-start'}`}>
-          <button
-            onClick={() => navigate('/login')}
-            className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[var(--store-secondary-color)] transition-colors select-none"
-          >
-            <ArrowLeft className={`w-4 h-4 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
-            <span>{t('back')}</span>
-          </button>
-        </div>
-
-        {/* Title */}
-        <div className="text-center space-y-3">
-          <h2 className="text-2xl font-black text-[#1a1a1a] dark:text-white">
-            {t('verifyOtpTitle')}
-          </h2>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            {t('verifyOtpDesc')}
-          </p>
-          <p className="text-[var(--store-secondary-color)] font-bold tracking-widest font-sans" dir="ltr">
-            ({countryCode}) {phoneNumber}
-          </p>
-        </div>
-
-        {/* Form Container */}
-        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-neutral-800 space-y-6">
-
-          <div className="space-y-4">
-            <label className="block text-center text-sm font-bold text-gray-700 dark:text-gray-200">
-              {language === 'ar' ? 'أدخل الرمز المكون من 6 أرقام' : 'Enter the 6-digit verification code'}
-            </label>
-
-            {/* Shadcn style input-otp component rendering */}
-            <div className="flex justify-center select-none" dir="ltr">
-              <OTPInput
-                maxLength={6}
-                value={otpCode}
-                onChange={handleOTPChange}
-                disabled={verifying || success}
-                render={({ slots }) => (
-                  <div className="flex gap-2 flex-wrap justify-center">
-                    {slots.map((slot, idx) => (
-                      <OtpSlot key={idx} {...slot} />
-                    ))}
-                  </div>
-                )}
+  // ── Verified state — Figma node 80:18757 ─────────────────────────────────
+  if (success) {
+    return (
+      <AuthShell artwork={AUTH_ARTWORK.verified} artworkSide="right" elevated={false} artworkRatio="628/418">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex size-20 items-center justify-center rounded-full bg-lc-green-dark">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden>
+              <path
+                d="M11 20.5 17 26.5 29 13.5"
+                stroke="#ffffff"
+                strokeWidth="4.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-            </div>
+            </svg>
           </div>
 
-          {/* Verification Status Feedback */}
-          {verifying && (
-            <div className="flex items-center justify-center gap-2 text-[var(--store-secondary-color)] font-bold text-sm py-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              {t('verifyingOtp')}
-            </div>
-          )}
+          <div className="pt-5">
+            <AuthHeading size={26}>{isArabic ? 'تم التحقق بنجاح' : 'Verified successfully'}</AuthHeading>
+          </div>
 
-          {success && (
-            <div className="flex items-center justify-center gap-2 text-green-600 font-bold text-sm py-2">
-              <ShieldCheck className="w-6 h-6 animate-bounce" />
-              {t('otpSuccess')}
-            </div>
-          )}
+          <p dir="auto" className="pt-3 pb-7 text-[14px] leading-[24px] text-[#888888]">
+            {isArabic
+              ? 'تم التحقق من حسابك بنجاح يمكنك الآن تسجيل الدخول والاستمتاع بتجربة تسوق أفضل.'
+              : 'Your account has been verified. You can now sign in and enjoy a better shopping experience.'}
+          </p>
 
-          {error && (
-            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 p-3.5 rounded-xl border border-red-100 dark:border-red-900/30 animate-in fade-in duration-200">
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-              <p className="text-xs font-semibold leading-relaxed">{error}</p>
-            </div>
-          )}
-
+          <AuthSubmit onClick={() => { window.location.href = resolvePostAuthRedirect(); }}>
+            {isArabic ? 'الانتقال لتسجيل الدخول' : 'Continue'}
+          </AuthSubmit>
         </div>
+      </AuthShell>
+    );
+  }
 
-        {/* Resend instructions */}
-        <div className="text-center select-none">
-          {countdown > 0 ? (
-            <p className="text-gray-400 text-xs font-bold transition-all">
-              {t('resendCodeIn')} <span className="text-indigo-600 dark:text-indigo-400 font-sans">{countdown}</span> {t('seconds')}
-            </p>
-          ) : (
-            <button
-              type="button"
-              disabled={resending}
-              onClick={handleResend}
-              className="text-[var(--store-secondary-color)] hover:underline text-xs font-black transition-colors cursor-pointer disabled:opacity-50"
-            >
-              {resending ? (
-                <Loader2 className="w-4 h-4 animate-spin inline mr-1" />
-              ) : null}
-              {t('resendCodeButton')}
-            </button>
-          )}
-        </div>
+  // ── OTP entry — Figma node 80:18449 ──────────────────────────────────────
+  return (
+    <AuthShell artwork={AUTH_ARTWORK.otp} artworkSide="left" elevated={false} artworkRatio="557/557">
+      <AuthHeading size={24}>{isArabic ? 'تأكيد رقم الجوال' : 'Verify your phone'}</AuthHeading>
 
+      <div className="pt-2.5">
+        <p dir="auto" className="text-[14px] leading-[24px] text-[#888888]">
+          {isArabic ? 'أدخل الرمز المرسل للتحقق إلى رقم الجوال' : 'Enter the code sent to your phone number'}
+        </p>
       </div>
 
-      {/* Embedded CSS animation for blinking caret */}
-      <style>{`
-        @keyframes caret-blink {
-          0%, 70%, 100% { opacity: 1; }
-          20%, 50% { opacity: 0; }
-        }
-        .animate-caret-blink {
-          animation: caret-blink 1s infinite;
-        }
-      `}</style>
-    </div>
+      <p dir="ltr" className="pt-1.5 text-start text-[16px] font-bold leading-[24px] text-lc-ink">
+        ({countryCode}) {phoneNumber}
+      </p>
+
+      <div className="flex justify-center pt-6" dir="ltr">
+        <OTPInput
+          maxLength={6}
+          value={otpCode}
+          onChange={handleOTPChange}
+          disabled={verifying}
+          render={({ slots }: { slots: SlotProps[] }) => (
+            <div className="flex flex-nowrap justify-center gap-1.5 sm:-mx-[15px] sm:gap-2.5">
+              {slots.map((slot, idx) => (
+                <OtpSlot key={idx} {...slot} />
+              ))}
+            </div>
+          )}
+        />
+      </div>
+
+      {error && (
+        <div className="pt-4">
+          <AuthError>{error}</AuthError>
+        </div>
+      )}
+
+      <div className="py-5 text-center">
+        {countdown > 0 ? (
+          <p className="text-[14px] leading-[21px] text-[#888888]">
+            {isArabic ? `لم تصلك الرسالة؟ إعادة الإرسال خلال ${mmss}` : `Didn't get it? Resend in ${mmss}`}
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending}
+            className="cursor-pointer text-[14px] font-semibold leading-[21px] text-lc-green-deep transition-opacity hover:opacity-80 disabled:opacity-60"
+          >
+            {resending
+              ? isArabic ? 'جاري الإرسال...' : 'Sending...'
+              : isArabic ? 'إعادة إرسال الرمز' : 'Resend code'}
+          </button>
+        )}
+      </div>
+
+      <AuthSubmit
+        loading={verifying}
+        disabled={otpCode.length !== 6}
+        onClick={() => handleComplete(otpCode)}
+      >
+        {isArabic ? 'تأكيد' : 'Confirm'}
+      </AuthSubmit>
+    </AuthShell>
   );
 }
