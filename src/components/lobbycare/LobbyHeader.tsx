@@ -84,8 +84,11 @@ function IconAction({
     >
       <span className="relative block size-[21px]">
         <Icon className="size-[21px] text-lc-ink" strokeWidth={1.5} aria-hidden />
+        {/* Figma sits the count 12px to the reading-start side of the glyph
+            (right under RTL), so this offset is logical rather than a physical
+            `-left-2`, which would pin it to the wrong side. */}
         {count ? (
-          <span className="absolute -top-1 -left-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-lc-green px-1 text-lc-overline font-semibold text-white">
+          <span className="absolute -top-1 -start-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-lc-green px-1 text-lc-overline font-semibold text-white">
             {count > 99 ? '99+' : count}
           </span>
         ) : null}
