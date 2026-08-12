@@ -12,12 +12,13 @@ export function TrendingProducts() {
 
   const isArabic = language === 'ar';
 
-  // Read active products where isTrending is true and category is active
+  // The storefront API exposes popular products as `most_ordered`; treat that
+  // list as trending while preserving support for an explicit trending flag.
   const trendingProducts = products.filter(p => {
     const isProductActive = p.active !== false;
     const cat = categories.find(c => c.id === p.categoryId);
     const isCategoryActive = !cat || cat.active !== false;
-    return isProductActive && isCategoryActive && p.isTrending;
+    return isProductActive && isCategoryActive && (p.isTrending || p.isMostOrdered);
   });
 
   if (trendingProducts.length === 0) {
