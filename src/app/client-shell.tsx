@@ -138,7 +138,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             />
           )}
           <main
-            className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] ${isHomePath ? 'lg:pb-0' : 'lg:pb-10'}`}
+            className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col pb-[calc(5.25rem+env(safe-area-inset-bottom))] ${isHomePath ? 'lg:pb-0' : 'lg:pb-10'}`}
           >
             {children}
           </main>
