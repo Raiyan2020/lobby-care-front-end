@@ -1,6 +1,7 @@
 'use client';
 
 import { Bell, House, Package, UserRound } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
@@ -19,6 +20,7 @@ export function MobileBottomNav() {
   const { language, dir, t } = useLanguage();
   const { isLoggedIn, openAuthModal } = useStore();
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
 
   const navigateTo = (path: TabPath, protectedRoute = false) => {
     if (protectedRoute && !isLoggedIn) {
@@ -37,35 +39,41 @@ export function MobileBottomNav() {
   ];
 
   return (
-    <nav
+    <motion.nav
       aria-label={language === 'ar' ? 'التنقل الرئيسي على الجوال' : 'Mobile primary navigation'}
       className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] px-3 lg:hidden"
       dir={dir}
       style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 28, stiffness: 330, mass: 0.7 }}
     >
-      <div className="pointer-events-auto mx-auto flex h-16 max-w-md items-center justify-around rounded-[22px] border border-white/80 bg-white/95 px-2 shadow-[0_12px_30px_rgba(31,31,31,0.16),0_2px_8px_rgba(31,31,31,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95">
+      <div className="pointer-events-auto mx-auto flex h-16 max-w-md items-center justify-around rounded-[22px] border border-white/70 bg-white/75 px-2 shadow-[0_14px_32px_rgba(31,31,31,0.14),0_2px_8px_rgba(31,31,31,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/65 dark:border-white/10 dark:bg-neutral-900/75 dark:supports-[backdrop-filter]:bg-neutral-900/65">
         {tabs.map(({ path, label, icon: Icon, protectedRoute }) => {
           const active = isTabActive(pathname, path);
 
           return (
-            <button
+            <motion.button
               key={path}
               type="button"
               onClick={() => navigateTo(path, protectedRoute)}
               aria-label={label}
               aria-current={active ? 'page' : undefined}
               title={label}
-              className={`flex size-12 items-center justify-center rounded-[18px] transition-[transform,background-color,color,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green active:scale-90 ${
+              animate={{ y: active ? -8 : 0, scale: active ? 1 : 0.94 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 380, mass: 0.55 }}
+              whileTap={{ scale: 0.9 }}
+              className={`flex size-12 items-center justify-center rounded-[18px] transition-[background-color,color,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lc-green ${
                 active
-                  ? '-translate-y-2 bg-lc-green text-white shadow-[0_8px_16px_rgba(74,122,53,0.32)] ring-4 ring-lc-green-light dark:ring-lc-green-dark/40'
-                  : 'text-lc-muted hover:bg-lc-surface hover:text-lc-green-deep dark:text-neutral-400 dark:hover:bg-white/10'
+                  ? 'bg-lc-green text-white shadow-[0_8px_16px_rgba(74,122,53,0.32)] ring-4 ring-lc-green-light/80 dark:ring-lc-green-dark/40'
+                  : 'text-lc-muted hover:bg-white/70 hover:text-lc-green-deep dark:text-neutral-400 dark:hover:bg-white/10'
               }`}
             >
               <Icon className="size-[21px]" strokeWidth={active ? 2.5 : 2} aria-hidden="true" />
-            </button>
+            </motion.button>
           );
         })}
       </div>
-    </nav>
+    </motion.nav>
   );
 }
