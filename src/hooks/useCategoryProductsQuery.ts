@@ -14,10 +14,6 @@ export function useCategoryProductsQuery(
   const query = useQuery({
     queryKey: ['category-products', categoryId, brandId, language, page, search],
     queryFn: () => fetchCategoryProducts(categoryId, page, brandId, language, search),
-    enabled:
-      (categoryId !== null && categoryId !== undefined) ||
-      (brandId !== null && brandId !== undefined) ||
-      (search !== undefined && search !== ''),
   });
 
   return {
