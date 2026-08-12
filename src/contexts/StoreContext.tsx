@@ -153,6 +153,7 @@ function mapApiProductToStoreProduct(
     price: p.price,
     originalPrice: p.old_price ?? undefined,
     badge: p.discount_percentage ? `-${p.discount_percentage}%` : undefined,
+    stock: p.stock,
     active: true,
     isOffer: flags.isOffer ?? false,
     isMostOrdered: flags.isMostOrdered ?? false,

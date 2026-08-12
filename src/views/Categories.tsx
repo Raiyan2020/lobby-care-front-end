@@ -19,6 +19,7 @@ const mapApiProductToProduct = (p: ApiProduct): Product => {
     originalPrice: p.old_price ?? undefined,
     image: p.image ?? '',
     badge: p.discount_percentage ? `-${p.discount_percentage}%` : undefined,
+    stock: p.stock,
   };
 };
 

@@ -22,7 +22,7 @@ export function useAddToCart() {
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const invalidateCart = useInvalidateCart();
   const { t } = useLanguage();
-  const { isLoggedIn, openAuthModal, logoutUser } = useStore();
+  const { cart, isLoggedIn, openAuthModal, logoutUser } = useStore();
 
   const addToCart = async (
     e: React.MouseEvent,
@@ -40,6 +40,17 @@ export function useAddToCart() {
     if (isOutOfStock({ stock })) {
       toast.error(t('outOfStockError'));
       return false;
+    }
+
+    if (stock !== null && stock !== undefined) {
+      const quantityAlreadyInCart = cart
+        .filter((item) => String(item.product.id) === String(productId))
+        .reduce((total, item) => total + item.quantity, 0);
+
+      if (quantityAlreadyInCart + quantity > stock) {
+        toast.error(t('stockLimitReached').replace('{stock}', String(stock)));
+        return false;
+      }
     }
 
     if (!isLoggedIn) {
