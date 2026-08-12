@@ -14,6 +14,8 @@ export interface PaginatedProductsResponse {
   data: PaginatedProductsData;
 }
 
+const PRODUCTS_PER_PAGE = 30;
+
 export async function fetchProductsList(
   type: 'featured-products' | 'latest-offers' | 'most-ordered',
   page = 1,
@@ -35,7 +37,7 @@ export async function fetchCategoryProducts(
   language = 'ar',
   search?: string
 ): Promise<PaginatedProductsData> {
-  let path = `/user/products?page=${page}`;
+  let path = `/user/products?page=${page}&per_page=${PRODUCTS_PER_PAGE}`;
   if (categoryId !== null && categoryId !== undefined) {
     path += `&category_id=${categoryId}`;
   }
@@ -88,6 +90,5 @@ export async function fetchProductDetails(
 ): Promise<ProductDetailsApiResponse> {
   return apiGet<ProductDetailsApiResponse>(`/user/products/${productId}/details`, { language });
 }
-
 
 

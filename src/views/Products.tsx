@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ChevronLeft, ChevronRight, ArrowRight, ArrowLeft, Loader2, Sparkles, BoxIcon } from 'lucide-react';
+import { ArrowRight, ArrowLeft, BoxIcon } from 'lucide-react';
 import { useNavigate } from '../lib/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useCategoryProductsQuery } from '../hooks/useCategoryProductsQuery';
 import { useCategoriesQuery } from '../hooks/useCategoriesQuery';
 import { ProductCard } from '../components/ProductCard';
 import { SearchInput } from '../components/SearchInput';
+import { CompactPagination } from '../components/CompactPagination';
 import type { ApiProduct } from '../api/types';
 import type { Product } from '../types';
 
@@ -260,51 +261,14 @@ export function Products() {
         )}
 
         {/* Pagination controls */}
-        {!isProductsLoading && !isProductsError && pagination && pagination.last_page > 1 && (
-          <div className="flex flex-col items-center mt-12 gap-3">
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => handlePageChange(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="w-10 h-10 rounded-full bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-sm disabled:opacity-40 hover:border-[var(--store-secondary-color)] transition-colors cursor-pointer"
-              >
-                {dir === 'rtl' ? <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" /> : <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />}
-              </button>
-
-              <div className="flex items-center gap-1.5">
-                {Array.from({ length: pagination.last_page }).map((_, idx) => {
-                  const p = idx + 1;
-                  const isActive = p === page;
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => handlePageChange(p)}
-                      className="w-8 h-8 rounded-full text-xs font-black transition-all cursor-pointer"
-                      style={{
-                        backgroundColor: isActive ? 'var(--store-secondary-color)' : 'transparent',
-                        color: isActive ? '#000' : 'var(--store-secondary-color)',
-                        border: `1.5px solid ${isActive ? 'var(--store-secondary-color)' : 'color-mix(in srgb, var(--store-secondary-color) 30%, transparent)'}`,
-                      }}
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(Math.min(pagination.last_page, page + 1))}
-                disabled={page === pagination.last_page}
-                className="w-10 h-10 rounded-full bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 flex items-center justify-center shadow-sm disabled:opacity-40 hover:border-[var(--store-secondary-color)] transition-colors cursor-pointer"
-              >
-                {dir === 'rtl' ? <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" /> : <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />}
-              </button>
-            </div>
-
-            <p className="text-center text-xs text-gray-400">
-              {isArabic ? `صفحة ${page} من ${pagination.last_page}` : `Page ${page} of ${pagination.last_page}`}
-            </p>
-          </div>
+        {!isProductsLoading && !isProductsError && pagination && (
+          <CompactPagination
+            currentPage={page}
+            totalPages={pagination.last_page}
+            onPageChange={handlePageChange}
+            dir={dir}
+            isArabic={isArabic}
+          />
         )}
 
       </div>
