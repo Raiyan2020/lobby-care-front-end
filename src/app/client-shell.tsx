@@ -11,12 +11,12 @@ import { Header } from '../components/Header';
 import { LobbyHeader } from '../components/lobbycare/LobbyHeader';
 import { IS_LOBBY_CARE } from '../api/config';
 import { SideMenu } from '../components/SideMenu';
+import { MobileBottomNav } from '../components/MobileBottomNav';
 import { AppContainer } from '../components/AppContainer';
 import { useStore } from '../contexts/StoreContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { ViewState } from '../types';
 import { toast } from 'sonner';
-import { syncAuthCookieFromStorage } from '../utils/auth';
 import { AuthModal } from '../components/AuthModal';
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
@@ -70,7 +70,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
               handleUnauthorized(json.msg);
             }
           }
-        } catch (e) {
+        } catch {
           // ignore parsing error
         }
       }
@@ -107,14 +107,6 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   }, []);
 
-  const currentView: ViewState =
-    pathname?.startsWith('/cart')        ? 'CART' :
-    pathname?.startsWith('/categories')  ? 'CATEGORIES' :
-    pathname?.startsWith('/offers')      ? 'OFFERS' :
-    pathname?.startsWith('/account')     ? 'ACCOUNT' :
-    pathname?.startsWith('/favorites')   ? 'FAVORITES' :
-    'HOME';
-
   const handleNavigate = (view: ViewState) => {
     const paths: Record<ViewState, string> = {
       HOME: '/', CATEGORIES: '/categories', CART: '/cart',
@@ -125,7 +117,6 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   };
 
   const isHomePath = pathname === '/' || pathname === '/home';
-
 
   // ── Customer layout ────────────────────────────────────────────────────
   return (
@@ -147,16 +138,15 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             />
           )}
           <main
-            className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col ${isHomePath ? 'pb-0' : 'pb-10'}`}
+            className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] ${isHomePath ? 'lg:pb-0' : 'lg:pb-10'}`}
           >
             {children}
           </main>
           <SideMenu
             isOpen={isMenuOpen}
             onClose={() => setIsMenuOpen(false)}
-            currentView={currentView}
-            onNavigate={handleNavigate}
           />
+          <MobileBottomNav />
         </div>
       </AppContainer>
 

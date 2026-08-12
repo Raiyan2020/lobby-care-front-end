@@ -1,7 +1,6 @@
 'use client';
 import { motion, AnimatePresence } from 'motion/react';
-import { ViewState } from '../types';
-import { User, X, Globe, LogOut, ShoppingBag, Bell, Shield, FileText, Info, Phone } from 'lucide-react';
+import { Facebook, FileText, Globe, Info, Instagram, Linkedin, LogOut, MessageCircle, Music2, Phone, Send, Share2, Shield, Twitter, User, X, Youtube } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
 import { useNavigate } from '../lib/navigation';
@@ -13,13 +12,34 @@ import React, { useEffect, useState } from 'react';
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  currentView: ViewState;
-  onNavigate: (view: ViewState) => void;
 }
 
-export function SideMenu({ isOpen, onClose, currentView, onNavigate }: SideMenuProps) {
+const socialIcon = (name: string, link: string, iconClass: string) => {
+  const value = `${name} ${link} ${iconClass}`.toLowerCase();
+  const Icon = value.includes('facebook')
+    ? Facebook
+    : value.includes('whatsapp')
+      ? MessageCircle
+      : value.includes('youtube')
+        ? Youtube
+        : value.includes('linkedin')
+          ? Linkedin
+          : value.includes('instagram')
+            ? Instagram
+            : value.includes('twitter') || value.includes('x.com')
+              ? Twitter
+              : value.includes('telegram')
+                ? Send
+                : value.includes('tiktok')
+                  ? Music2
+                  : Share2;
+
+  return <Icon className="size-[18px]" aria-hidden="true" />;
+};
+
+export function SideMenu({ isOpen, onClose }: SideMenuProps) {
   const { language, setLanguage, dir, t } = useLanguage();
-  const { settings, openAuthModal, isLoggedIn } = useStore();
+  const { settings, openAuthModal } = useStore();
   const navigate = useNavigate();
 
   const session = getSession();
@@ -29,25 +49,11 @@ export function SideMenu({ isOpen, onClose, currentView, onNavigate }: SideMenuP
   const storeNameVal = language === 'ar' ? settings.storeName : settings.storeNameEn;
   const displayStoreName = storeNameVal || 'App';
 
-  const handleProtectedNavigation = (path: string) => {
-    if (!isLoggedIn) {
-      openAuthModal(() => {
-        navigate(path);
-      });
-    } else {
-      navigate(path);
-    }
-    onClose();
-  };
-
   const menuItems = [
-    { label: t('account'), icon: User, onClick: () => handleProtectedNavigation('/account') },
-    { label: t('myOrders'), icon: ShoppingBag, onClick: () => handleProtectedNavigation('/orders') },
-    { label: t('notifications'), icon: Bell, onClick: () => handleProtectedNavigation('/notifications') },
-    { label: t('termsPrivacy'), icon: Shield, onClick: () => { navigate('/terms-privacy'); onClose(); } },
-    { label: t('returnExchangePolicy'), icon: FileText, onClick: () => { navigate('/return-exchange-policy'); onClose(); } },
-    { label: t('aboutUs'), icon: Info, onClick: () => { navigate('/about-us'); onClose(); } },
-    { label: t('contactUs'), icon: Phone, onClick: () => { navigate('/contact'); onClose(); } },
+    { label: t('termsPrivacy'), icon: Shield, path: '/terms-privacy', onClick: () => { navigate('/terms-privacy'); onClose(); } },
+    { label: t('returnExchangePolicy'), icon: FileText, path: '/return-exchange-policy', onClick: () => { navigate('/return-exchange-policy'); onClose(); } },
+    { label: t('aboutUs'), icon: Info, path: '/about-us', onClick: () => { navigate('/about-us'); onClose(); } },
+    { label: t('contactUs'), icon: Phone, path: '/contact', onClick: () => { navigate('/contact'); onClose(); } },
   ];
 
   return (
@@ -59,14 +65,14 @@ export function SideMenu({ isOpen, onClose, currentView, onNavigate }: SideMenuP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm z-40"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[70]"
           />
           <motion.div
             initial={{ x: dir === 'rtl' ? '100%' : '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: dir === 'rtl' ? '100%' : '-100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            className={`absolute inset-y-0 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-[76%] max-w-[300px] bg-white dark:bg-neutral-900 z-50 flex flex-col shadow-2xl overflow-hidden`}
+            className={`absolute inset-y-0 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-[76%] max-w-[300px] bg-white dark:bg-neutral-900 z-[80] flex flex-col shadow-2xl overflow-hidden`}
             dir={dir}
             style={{ direction: dir }}
           >
@@ -97,11 +103,7 @@ export function SideMenu({ isOpen, onClose, currentView, onNavigate }: SideMenuP
               style={{ direction: dir }}
             >
               {menuItems.map((item, index) => {
-                // Check if current page matches standard paths for subtle active state
-                const isActive = (
-                  (item.label === t('account') && window.location.pathname === '/account') ||
-                  (item.label === t('myOrders') && window.location.pathname === '/orders')
-                );
+                const isActive = window.location.pathname === item.path;
 
                 return (
                   <button
@@ -137,14 +139,13 @@ export function SideMenu({ isOpen, onClose, currentView, onNavigate }: SideMenuP
                       target="_blank"
                       rel="noopener noreferrer"
                       title={social.name}
+                      aria-label={social.name}
                       className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-neutral-800 hover:bg-[var(--store-secondary-color)] hover:scale-110 transition-all duration-200 active:scale-95"
                     >
                       {social.icon ? (
                         <img src={social.icon} alt={social.name} className="w-4.5 h-4.5 object-contain" />
                       ) : (
-                        <span className="text-[10px] font-black text-gray-600 dark:text-gray-300">
-                          {social.name.charAt(0)}
-                        </span>
+                        socialIcon(social.name, social.link, social.icon_class)
                       )}
                     </a>
                   ))}
