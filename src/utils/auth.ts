@@ -37,7 +37,6 @@ export function syncAuthCookieFromStorage() {
 export interface UserSession {
   id?: number;
   name?: string;
-  email?: string;
   phone?: string;
   phoneNumber: string; // for compatibility
   country_code?: string;
@@ -174,20 +173,4 @@ export const deleteAccountData = () => {
   localStorage.removeItem('user_addresses');
   localStorage.removeItem('user_orders');
   localStorage.removeItem('user_points_history');
-};
-
-/**
- * Simulates OTP verification, ready to be linked to a real SMS API (e.g. Twilio or Firebase).
- */
-export const verifySMSCode = async (phoneNumber: string, verificationCode: string): Promise<boolean> => {
-  // Real integration placeholder:
-  // const response = await fetch('/api/verify-otp', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ phoneNumber, code: verificationCode })
-  // });
-  // return response.ok;
-
-  // Demo implementation: Any 4-digit code is accepted, with a recommendation for "1234"
-  return /^\d{4}$/.test(verificationCode);
 };

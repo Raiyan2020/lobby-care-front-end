@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from '../lib/navigation';
-import { User, Mail, CheckCircle2, AlertCircle, ArrowRight, Loader2, Camera } from 'lucide-react';
+import { User, CheckCircle2, AlertCircle, ArrowRight, Loader2, Camera } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getSession } from '../utils/auth';
 import { apiGet } from '../api/client';
@@ -11,7 +11,6 @@ import { BASE_URL } from '../api/config';
 interface UserProfile {
   id: number;
   name: string;
-  email: string;
   phone: string;
   country_code: string;
   image: string;
@@ -28,13 +27,12 @@ async function fetchProfile(lang: string): Promise<UserProfile> {
 }
 
 async function updateProfile(
-  params: { name: string; email: string; image?: File },
+  params: { name: string; image?: File },
   lang: string
 ): Promise<{ code: number; msg: string; data: UserProfile | null }> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('api_token') : null;
   const formData = new FormData();
   formData.append('name', params.name);
-  formData.append('email', params.email);
   if (params.image) formData.append('image', params.image);
 
   const res = await fetch(`${BASE_URL}/user/profile`, {
@@ -60,7 +58,6 @@ export function AccountEdit() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -82,7 +79,6 @@ export function AccountEdit() {
       .then((data) => {
         setProfile(data);
         setName(data.name || '');
-        setEmail(data.email || '');
         setImagePreview(data.image || null);
       })
       .catch(() => {
@@ -111,7 +107,7 @@ export function AccountEdit() {
 
     setSubmitting(true);
     try {
-      const res = await updateProfile({ name: name.trim(), email: email.trim(), image: imageFile || undefined }, language);
+      const res = await updateProfile({ name: name.trim(), image: imageFile || undefined }, language);
 
       if (res.code === 200) {
         setShowSuccess(true);
@@ -247,27 +243,6 @@ export function AccountEdit() {
                     disabled={submitting}
                     className={`w-full ${isArabic ? 'pr-11 pl-4' : 'pl-11 pr-4'} py-3.5 bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700 rounded-2xl focus:ring-2 focus:ring-[var(--store-secondary-color)] focus:bg-white dark:focus:bg-neutral-900 outline-none transition-all text-sm font-semibold text-gray-900 dark:text-white`}
                     placeholder={isArabic ? 'أدخل اسمك الكامل' : 'Enter your full name'}
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">
-                  {isArabic ? 'البريد الإلكتروني' : 'Email Address'}
-                </label>
-                <div className="relative">
-                  <span className={`absolute inset-y-0 ${isArabic ? 'right-4' : 'left-4'} flex items-center text-gray-400 pointer-events-none`}>
-                    <Mail className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setApiError(null); }}
-                    disabled={submitting}
-                    className={`w-full ${isArabic ? 'pr-11 pl-4' : 'pl-11 pr-4'} py-3.5 bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700 rounded-2xl focus:ring-2 focus:ring-[var(--store-secondary-color)] focus:bg-white dark:focus:bg-neutral-900 outline-none transition-all text-sm font-semibold text-gray-800 dark:text-white`}
-                    placeholder="example@mail.com"
-                    dir="ltr"
                   />
                 </div>
               </div>

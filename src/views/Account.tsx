@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/navigation';
-import { User, MapPin, ShoppingBag, Award, Globe, LogOut, Trash2, ChevronLeft, ChevronRight, Settings, Moon, Sun, KeyRound, Bell, Shield, FileText, Info, Phone, } from 'lucide-react';
+import { User, MapPin, ShoppingBag, Award, Globe, LogOut, Trash2, ChevronLeft, ChevronRight, Settings, Moon, Sun, Bell, Shield, FileText, Info, Phone, } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
 import { getSession, getOrGenerateDeviceId, syncAuthCookieFromStorage } from '../utils/auth';
@@ -11,7 +11,6 @@ import { logoutApi, deleteAccountApi } from '../api/auth';
 interface UserProfile {
   id: number;
   name: string;
-  email: string;
   phone: string;
   country_code: string;
   image: string;
@@ -170,11 +169,6 @@ export function Account() {
                 <p className="text-[13px] text-gray-500 font-semibold" dir="ltr">
                   {profile ? `${profile.country_code} ${profile.phone}` : session?.phoneNumber}
                 </p>
-                {(profile?.email || session?.email) && (
-                  <p className="text-[11px] text-gray-400 font-medium">
-                    {profile?.email || session?.email}
-                  </p>
-                )}
               </div>
             </div>
             {/* Edit button */}
@@ -223,13 +217,6 @@ export function Account() {
             label={isArabic ? 'الإشعارات' : 'Notifications'}
             sublabel={isArabic ? 'اطلع على آخر التحديثات' : 'Latest updates'}
             onClick={() => navigate('/notifications')}
-          />
-          <GridCard
-            icon={<KeyRound className="w-6 h-6 text-violet-600" />}
-            iconBg="bg-violet-50"
-            label={isArabic ? 'كلمة المرور' : 'Password'}
-            sublabel={isArabic ? 'تغيير كلمة المرور' : 'Change your password'}
-            onClick={() => navigate('/account/change-password')}
           />
           <GridCard
             icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -340,8 +327,6 @@ export function Account() {
               right={<span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full uppercase">{settings.displayMode === 'dark' ? (isArabic ? 'داكن' : 'Dark') : (isArabic ? 'مضيء' : 'Light')}</span>}
               onClick={() => updateSettings({ ...settings, displayMode: settings.displayMode === 'dark' ? 'light' : 'dark' })}
             />
-            <div className="h-px bg-gray-50 dark:bg-neutral-800 mx-4" />
-            <Row icon={<KeyRound className="w-[18px] h-[18px] text-violet-600" />} iconBg="bg-violet-50" label={isArabic ? 'تغيير كلمة المرور' : 'Change Password'} onClick={() => navigate('/account/change-password')} />
           </div>
 
           {/* Links section */}

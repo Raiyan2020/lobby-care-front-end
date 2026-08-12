@@ -5,15 +5,15 @@
  *   card     420 wide, radius 20, pad 40/44, 0 4px 40px shadow
  *   heading  IBM Plex Sans Arabic 700 · 26/38 · #1a1a1a
  *   sub      400 · 14/21 · #888888, 6px below
- *   fields   phone row (radius 12) + password (radius 10), 14px apart,
- *            stack starting 24px under the sub
+ *   fields   phone row (radius 12), 14px apart, stack starting 24px under sub
  *   button   332×52, bg #4a7a35, radius 10, 700 · 16/24
  *
- * The screen keeps its three-step machine — phone → (exists?) → password, or
- * → inline registration — because the API drives it. Figma draws the
- * password step, so that state matches the frame exactly; the phone and
- * register steps reuse the same card with the fields that step needs. The
- * register step mirrors the "انشاء حساب" frame (node 80:18597).
+ * Authentication is phone + WhatsApp OTP only. This screen is a two-step
+ * machine — phone → (existing account? send OTP : collect name) — and the
+ * API drives which branch runs. Both branches hand off to /verify, which
+ * owns OTP entry for the whole app (login and registration alike). The
+ * name step mirrors the "انشاء حساب" frame (node 80:18597) minus the
+ * fields that no longer exist (email/password).
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/navigation';
@@ -26,12 +26,7 @@ import {
   checkPhoneExistsApi,
   CountriesResponse,
 } from '../api/auth';
-import {
-  startSession,
-  getOrGenerateDeviceId,
-  resolvePostAuthRedirect,
-  persistPostAuthRedirect,
-} from '../utils/auth';
+import { persistPostAuthRedirect } from '../utils/auth';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
@@ -41,7 +36,6 @@ import {
   AuthHeading,
   AuthSubheading,
   AuthField,
-  AuthPasswordField,
   AuthPhoneRow,
   AuthSubmit,
   AuthError,
@@ -54,30 +48,18 @@ const DEFAULT_COUNTRIES: Country[] = [
   { code: '+963', iso: 'sy', name: 'سوريا', phone_start: '9', phone_length: 9 },
 ];
 
-type Step = 'phone' | 'password' | 'register';
+type Step = 'phone' | 'name';
 
 const createAuthSchema = (step: Step, phoneLength?: number) =>
-  z
-    .object({
-      phone: z
-        .string()
-        .min(1, { message: 'enterPhoneErr' })
-        .refine((val) => (phoneLength === undefined ? true : val.length === phoneLength), {
-          message: 'phoneLengthErr',
-        }),
-      name: step === 'register' ? z.string().min(1, { message: 'enterFullNameErr' }) : z.string().optional(),
-      email:
-        step === 'register'
-          ? z.string().min(1, { message: 'enterEmailErr' }).email({ message: 'invalidEmailErr' })
-          : z.string().optional(),
-      password: step !== 'phone' ? z.string().min(6, { message: 'passwordMinLengthErr' }) : z.string().optional(),
-      password_confirmation:
-        step === 'register' ? z.string().min(6, { message: 'passwordMinLengthErr' }) : z.string().optional(),
-    })
-    .refine((data) => (step === 'register' ? data.password === data.password_confirmation : true), {
-      message: 'passwordsMustMatchErr',
-      path: ['password_confirmation'],
-    });
+  z.object({
+    phone: z
+      .string()
+      .min(1, { message: 'enterPhoneErr' })
+      .refine((val) => (phoneLength === undefined ? true : val.length === phoneLength), {
+        message: 'phoneLengthErr',
+      }),
+    name: step === 'name' ? z.string().min(1, { message: 'enterFullNameErr' }) : z.string().optional(),
+  });
 
 /**
  * Mirrors the zod output exactly: `.optional()` keeps the key present and
@@ -87,9 +69,6 @@ const createAuthSchema = (step: Step, phoneLength?: number) =>
 interface AuthFormValues {
   phone: string;
   name: string | undefined;
-  email: string | undefined;
-  password: string | undefined;
-  password_confirmation: string | undefined;
 }
 
 export function Login() {
@@ -111,7 +90,7 @@ export function Login() {
 
   const { control, handleSubmit, formState } = useForm<AuthFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { phone: '', name: '', email: '', password: '', password_confirmation: '' },
+    defaultValues: { phone: '', name: '' },
   });
   const { errors } = formState;
 
@@ -152,10 +131,10 @@ export function Login() {
     return res.msg || t('loginFailed');
   };
 
-  const goToVerify = (phone: string) => {
+  const goToVerify = (phone: string, type: 'register' | 'login') => {
     sessionStorage.setItem('verify_phone', phone);
     sessionStorage.setItem('verify_country_code', selectedCountry?.code || '+965');
-    sessionStorage.setItem('verify_type', 'register');
+    sessionStorage.setItem('verify_type', type);
     persistPostAuthRedirect();
     navigate('/verify');
   };
@@ -167,19 +146,30 @@ export function Login() {
     if (step === 'phone') {
       setSubmitting(true);
       try {
-        const res = await checkPhoneExistsApi(
-          { country_code: selectedCountry?.code || '+965', phone: data.phone },
-          language
-        );
+        const countryCode = selectedCountry?.code || '+965';
+        const exists = await checkPhoneExistsApi({ country_code: countryCode, phone: data.phone }, language);
 
-        if (res.code === 200 && res.data === true) {
-          setStep('password');
-        } else if (res.code === 422 || res.key === 'fail' || res.data === false || res.data === null) {
-          setStep('register');
-        } else {
-          const errMsg = messageFrom(res);
+        if (exists.code !== 200) {
+          const errMsg = messageFrom(exists);
           setApiError(errMsg);
           toast.error(errMsg);
+          return;
+        }
+
+        if (exists.data?.exists) {
+          // Existing account: send the WhatsApp OTP straight away.
+          const res = await loginApi({ country_code: countryCode, phone: data.phone }, language);
+
+          if (res.code === 200) {
+            toast.success(res.msg || t('verifyOtpDesc'));
+            goToVerify(data.phone, 'login');
+          } else {
+            const errMsg = messageFrom(res);
+            setApiError(errMsg);
+            toast.error(errMsg);
+          }
+        } else {
+          setStep('name');
         }
       } catch {
         setApiError(t('connectionError'));
@@ -190,63 +180,21 @@ export function Login() {
       return;
     }
 
-    // ── Step 2: sign in ───────────────────────────────────────────────────
-    if (step === 'password') {
-      setSubmitting(true);
-      try {
-        const res = await loginApi(
-          {
-            type: 'phone',
-            country_code: selectedCountry?.code,
-            phone: data.phone,
-            password: data.password,
-            device_id: getOrGenerateDeviceId(),
-            device_type: 'web',
-          },
-          language
-        );
-
-        if (res.code === 200 && res.data && res.key !== 'needActive') {
-          toast.success(res.msg || t('loginSuccess'));
-          startSession(res.data);
-          setTimeout(() => {
-            window.location.href = resolvePostAuthRedirect();
-          }, 800);
-        } else if (res.key === 'needActive' && res.data && typeof res.data === 'object' && 'phone' in res.data) {
-          toast.success(res.msg || t('verifyOtpDesc'));
-          goToVerify(res.data.phone);
-        } else {
-          const errMsg = messageFrom(res);
-          setApiError(errMsg);
-          toast.error(errMsg);
-        }
-      } catch {
-        setApiError(t('connectionError'));
-        toast.error(t('connectionError'));
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
-
-    // ── Step 3: register the new phone ────────────────────────────────────
+    // ── Step 2: new number — collect the name, then register + send OTP ────
     setSubmitting(true);
     try {
       const res = await registerApi(
         {
           name: data.name!,
-          email: data.email!,
           country_code: selectedCountry?.code || '+965',
           phone: data.phone,
-          password: data.password!,
-          password_confirmation: data.password_confirmation!,
         },
         language
       );
 
       if ((res.code === 201 || res.code === 200) && res.data) {
-        toast.success(res.msg || t('registerComingSoon'));
-        goToVerify(data.phone);
+        toast.success(res.msg || t('verifyOtpDesc'));
+        goToVerify(data.phone, 'register');
       } else {
         const errMsg = res.msg || (isArabic ? 'فشل إكمال التسجيل.' : 'Registration failed.');
         setApiError(errMsg);
@@ -263,10 +211,10 @@ export function Login() {
   const msg = (key?: string) => (key ? t(key as Parameters<typeof t>[0]) || key : null);
 
   const heading =
-    step === 'register' ? (isArabic ? 'إنشاء حساب جديد' : 'Create a new account') : isArabic ? 'تسجيل الدخول' : 'Sign in';
+    step === 'name' ? (isArabic ? 'إنشاء حساب جديد' : 'Create a new account') : isArabic ? 'تسجيل الدخول' : 'Sign in';
 
   const subheading =
-    step === 'register'
+    step === 'name'
       ? isArabic
         ? 'انضم إلى لوبي كير واستمتع بتجربة تسوق أفضل'
         : 'Join Lobby Care and enjoy a better shopping experience'
@@ -279,21 +227,17 @@ export function Login() {
       ? isArabic
         ? 'متابعة'
         : 'Continue'
-      : step === 'password'
-        ? isArabic
-          ? 'تسجيل الدخول'
-          : 'Sign in'
-        : isArabic
-          ? 'إنشاء حساب'
-          : 'Create account';
+      : isArabic
+        ? 'إنشاء حساب'
+        : 'Create account';
 
   return (
     <AuthShell
-      artwork={step === 'register' ? AUTH_ARTWORK.register : AUTH_ARTWORK.login}
-      artworkSide={step === 'register' ? 'right' : 'left'}
-      artworkRatio={step === 'register' ? '578/557' : '597/557'}
+      artwork={step === 'name' ? AUTH_ARTWORK.register : AUTH_ARTWORK.login}
+      artworkSide={step === 'name' ? 'right' : 'left'}
+      artworkRatio={step === 'name' ? '578/557' : '597/557'}
     >
-      <AuthHeading size={step === 'register' ? 24 : 26}>{heading}</AuthHeading>
+      <AuthHeading size={step === 'name' ? 24 : 26}>{heading}</AuthHeading>
       <AuthSubheading>{subheading}</AuthSubheading>
 
       <form onSubmit={handleSubmit(onFormSubmit)} noValidate className="flex flex-col gap-3.5 pt-6">
@@ -323,87 +267,23 @@ export function Login() {
           {errors.phone && <p className="pt-1 text-[13px] text-lc-danger">{msg(errors.phone.message)}</p>}
         </div>
 
-        {step === 'register' && (
-          <>
-            <div>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field }) => (
-                  <AuthField
-                    {...field}
-                    type="text"
-                    autoComplete="name"
-                    disabled={submitting}
-                    invalid={!!errors.name}
-                    placeholder={isArabic ? 'الاسم بالكامل' : 'Full name'}
-                  />
-                )}
-              />
-              {errors.name && <p className="pt-1 text-[13px] text-lc-danger">{msg(errors.name.message)}</p>}
-            </div>
-            <div>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field }) => (
-                  <AuthField
-                    {...field}
-                    type="email"
-                    dir="ltr"
-                    autoComplete="email"
-                    disabled={submitting}
-                    invalid={!!errors.email}
-                    placeholder={isArabic ? 'البريد الإلكتروني' : 'Email address'}
-                  />
-                )}
-              />
-              {errors.email && <p className="pt-1 text-[13px] text-lc-danger">{msg(errors.email.message)}</p>}
-            </div>
-          </>
-        )}
-
-        {step !== 'phone' && (
+        {step === 'name' && (
           <div>
             <Controller
               control={control}
-              name="password"
+              name="name"
               render={({ field }) => (
-                <AuthPasswordField
+                <AuthField
                   {...field}
-                  autoComplete={step === 'register' ? 'new-password' : 'current-password'}
+                  type="text"
+                  autoComplete="name"
                   disabled={submitting}
-                  invalid={!!errors.password}
-                  placeholder={isArabic ? 'كلمة المرور' : 'Password'}
+                  invalid={!!errors.name}
+                  placeholder={isArabic ? 'الاسم بالكامل' : 'Full name'}
                 />
               )}
             />
-            {errors.password && (
-              <p className="pt-1 text-[13px] text-lc-danger">{msg(errors.password.message)}</p>
-            )}
-          </div>
-        )}
-
-        {step === 'register' && (
-          <div>
-            <Controller
-              control={control}
-              name="password_confirmation"
-              render={({ field }) => (
-                <AuthPasswordField
-                  {...field}
-                  autoComplete="new-password"
-                  disabled={submitting}
-                  invalid={!!errors.password_confirmation}
-                  placeholder={isArabic ? 'تأكيد كلمة المرور' : 'Confirm password'}
-                />
-              )}
-            />
-            {errors.password_confirmation && (
-              <p className="pt-1 text-[13px] text-lc-danger">
-                {msg(errors.password_confirmation.message)}
-              </p>
-            )}
+            {errors.name && <p className="pt-1 text-[13px] text-lc-danger">{msg(errors.name.message)}</p>}
           </div>
         )}
 
@@ -414,20 +294,8 @@ export function Login() {
         </AuthSubmit>
       </form>
 
-      <div className="flex items-center justify-between pt-5 text-[14px] leading-[21px]">
-        {step === 'password' ? (
-          <button
-            type="button"
-            onClick={() => navigate('/forgot-password')}
-            className="cursor-pointer font-semibold text-lc-green-deep transition-opacity hover:opacity-80"
-          >
-            {isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
-          </button>
-        ) : (
-          <span />
-        )}
-
-        {step !== 'phone' && (
+      {step !== 'phone' && (
+        <div className="flex items-center justify-end pt-5 text-[14px] leading-[21px]">
           <button
             type="button"
             onClick={() => {
@@ -438,8 +306,8 @@ export function Login() {
           >
             {isArabic ? 'تغيير الرقم' : 'Change number'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </AuthShell>
   );
 }

@@ -1,5 +1,5 @@
-import { Register } from '../../views/Register';
+import { redirect } from 'next/navigation';
 
 export default function RegisterPage() {
-  return <Register />;
+  redirect('/login');
 }

@@ -19,7 +19,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { verifyCodeApi, resendCodeApi } from '../api/auth';
-import { startSession, resolvePostAuthRedirect } from '../utils/auth';
+import { startSession, resolvePostAuthRedirect, getOrGenerateDeviceId } from '../utils/auth';
 import { toast } from 'sonner';
 import {
   AuthShell,
@@ -62,7 +62,7 @@ export function Verify() {
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [countryCode, setCountryCode] = useState('');
-  const [, setVerifyType] = useState('register');
+  const [verifyType, setVerifyType] = useState<'register' | 'login'>('register');
 
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function Verify() {
   useEffect(() => {
     const storedPhone = sessionStorage.getItem('verify_phone') || '';
     const storedCode = sessionStorage.getItem('verify_country_code') || '';
-    const storedType = sessionStorage.getItem('verify_type') || 'register';
+    const storedType = sessionStorage.getItem('verify_type') === 'login' ? 'login' : 'register';
 
     if (!storedPhone) {
       toast.error(
@@ -106,7 +106,14 @@ export function Verify() {
 
     try {
       const res = await verifyCodeApi(
-        { country_code: countryCode, phone: phoneNumber, code, type: 'register' },
+        {
+          country_code: countryCode,
+          phone: phoneNumber,
+          code,
+          type: verifyType,
+          device_id: getOrGenerateDeviceId(),
+          device_type: 'web',
+        },
         language
       );
 
@@ -149,7 +156,7 @@ export function Verify() {
 
     try {
       const res = await resendCodeApi(
-        { country_code: countryCode, phone: phoneNumber, type: 'register' },
+        { country_code: countryCode, phone: phoneNumber, type: verifyType },
         language
       );
 
@@ -210,7 +217,7 @@ export function Verify() {
 
       <div className="pt-2.5">
         <p dir="auto" className="text-[14px] leading-[24px] text-[#888888]">
-          {isArabic ? 'أدخل الرمز المرسل للتحقق إلى رقم الجوال' : 'Enter the code sent to your phone number'}
+          {isArabic ? 'أدخل الرمز المرسل إلى رقم جوالك عبر واتساب' : 'Enter the code sent to your phone via WhatsApp'}
         </p>
       </div>
 

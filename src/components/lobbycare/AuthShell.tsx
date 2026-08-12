@@ -170,31 +170,6 @@ export function AuthField({
   );
 }
 
-/** Password field with the 17px lock glyph Figma places on the reading edge. */
-export function AuthPasswordField({
-  invalid,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
-  return (
-    <div
-      className={`flex h-[47px] w-full items-center gap-2 rounded-lc border-[1.3px] bg-white px-4 transition-colors focus-within:border-lc-green ${
-        invalid ? 'border-lc-danger' : 'border-lc-border-warm'
-      }`}
-    >
-      <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden className="shrink-0">
-        <rect x="2.5" y="7" width="12" height="8" rx="2" stroke="#aaaaaa" strokeWidth="1.3" />
-        <path d="M5.5 7V5a3 3 0 0 1 6 0v2" stroke="#aaaaaa" strokeWidth="1.3" />
-      </svg>
-      <input
-        {...props}
-        type="password"
-        aria-invalid={invalid || undefined}
-        className="min-w-0 flex-1 bg-transparent text-[15px] leading-[23px] text-lc-ink outline-none placeholder:text-[#bbbbbb]"
-      />
-    </div>
-  );
-}
-
 export function AuthSubmit({
   loading,
   children,

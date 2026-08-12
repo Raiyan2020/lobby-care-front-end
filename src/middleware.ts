@@ -30,7 +30,6 @@ const AUTH_ONLY_PREFIXES = [
   '/login',
   '/register',
   '/verify',
-  '/forgot-password',
 ];
 
 /**
